@@ -9,7 +9,8 @@ https://www.oracle.com/java/technologies/javase-downloads.html
 File > New > Project... > Java 선택 > Project SDK를 설치한 Java로 설정 > Next > Next > Project 이름 및 Location 설정 > Finish
 
 * 간단한 프로그램 작성
-
+    * src에 'hello' 패키지 생성 (Command+N Mac)
+   
 *주의 :*  
 패키지 이름은 소문자(hello)로 한다.    
 Class 이름은 대문자(HelloJava)로 *시작*한다.  
