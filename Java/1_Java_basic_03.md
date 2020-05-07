@@ -10,6 +10,8 @@ File > New > Project... > Java 선택 > Project SDK를 설치한 Java로 설정 
 
 * 간단한 프로그램 작성
     * src에 'hello' 패키지 생성 (Command+N Mac)
+    * 'hello' 패키지에 'HelloJava' Class 생성 (Command+N Mac)     
+
    
 *주의 :*  
 패키지 이름은 소문자(hello)로 한다.    
