@@ -52,12 +52,13 @@ package classpart;
 public class StudentTest { //객체를 사용하는 건 다른 클래스인 경우가 대부분이다.
 
     public static void main(String[] args) {
-        Student studentLee = new Student(); //생성자로 학생 class를 생성. 
+        Student studentLee = new Student(); //인스턴스 생성
 
-        studentLee.studentName = "이순신";  //생성된 class의 멤버 변수를 참조할 수 있다. (참조 변수)
+        //참조 변수 사용 studentLee
+        studentLee.studentName = "이순신";  //생성된 인스턴스(객체)의 멤버 변수를 사용할 수 있다.
         studentLee.address = "서울";
 
-        studentLee.showStudentInfo(); //생성된 class의 메서드를 참할 수 있다.
+        studentLee.showStudentInfo(); //생성된 인스턴스(객체)의 메서드를 사용할 수 있다.
     }
 }
 
