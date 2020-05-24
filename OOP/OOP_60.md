@@ -79,4 +79,48 @@ public class ArrayListStreamTest {
 }
 ```     
     
+* reduce() 연산   
+정의된 연산이 아닌 프로그래머가 직접 지정하는 연산을 적용    
+최종 연산으로 스트림의 요소를 소모하며 연산 수행     
+
+배열의 모든 요소의 합을 구하는 reduce() 연산   
+```
+Arrays.stream(arr).reduce(0,(a,b)->a+b));
+```
+
+```
+package stream;
+
+import java.util.Arrays;
+import java.util.function.BinaryOperator;
+
+class CompareString implements BinaryOperator<String> {
+
+    @Override
+    public String apply(String s1, String s2) {
+        if(s1.getBytes().length >= s2.getBytes().length) {
+            return s1;
+        } else {
+            return s2;
+        }
+    }
+}
+public class ReduceTest {
+    public static void main(String[] args) {
+
+        String[] greetings = {"안녕하세요","hello","Good Morning","반갑습니다"};
+
+        System.out.println(Arrays.stream(greetings).reduce("",(s1,s2) -> {
+            if(s1.getBytes().length >= s2.getBytes().length) {
+                return s1;
+            } else {
+                return s2;
+            }
+        }));
+        //람다식 대신 BinaryOperator가 구현된 클래스를 사용
+        System.out.println(Arrays.stream(greetings).reduce(new CompareString()).get());
+    }
+}
+```
+    
     
