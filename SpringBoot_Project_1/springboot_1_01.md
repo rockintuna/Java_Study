@@ -52,7 +52,7 @@ import org.springframework.web.bind.annotation.RestController;
 @RestController //웹에서 접속 가능한 컨트롤러 어노테이션
 public class WelcomController {
 
-    @GetMapping("/") //http에서 접속하는데 쓰는 기본적인 4가지 메소드중 하나
+    @GetMapping("/") //Get: http에서 접속하는데 쓰는 기본적인 4가지 메소드중 하나
     public String hello() {
         return "Hello, world!!!";
     }
