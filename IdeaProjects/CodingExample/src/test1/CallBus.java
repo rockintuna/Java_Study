@@ -1,8 +1,6 @@
 package test1;
 
-import java.awt.*;
 import java.util.Arrays;
-import java.util.ListIterator;
 import java.util.Scanner;
 
 public class CallBus {
