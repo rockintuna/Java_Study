@@ -40,12 +40,12 @@ import org.junit.Test;
 import static org.hamcrest.CoreMatchers.is;
 import static org.junit.Assert.*;
 
-public class RestourantTests {
+public class RestaurantTests {
 
     @Test
     public void creation() {
-        Restourant restourant = new Restourant();
-        assertThat(restourant.getName(), is("Bob zip"));
+        Restourant restaurant = new Restaurant();
+        assertThat(restaurant.getName(), is("Bob zip"));
     }
 
 }

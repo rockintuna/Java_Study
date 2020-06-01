@@ -67,14 +67,14 @@ JSON 에서 Collection 표현
 
 APIs를 Rest API에 맞춰 정의하기     
 가게 목록 얻기(read Collection)    
-GET /restourants    
+GET /restaurants    
 개별 가게 정보 얻기(read Member)    
-GET /restourants/{id}  
+GET /restaurants/{id}  
 가게 추가(create Collection)    
-POST /restourants   
+POST /restaurants   
 가게 수정(update Member)    
-PATCH /restourants/{id}     
+PATCH /restaurants/{id}     
 가게 삭제(delete Member)    
-DELETE /restourants/{id}    
+DELETE /restaurants/{id}    
 
     
