@@ -47,7 +47,7 @@ Controller Test
                 .andExpect(header().string("location", "/restaurants/1234"))
                 .andExpect(content().string("{}")); //비어있는지 확인
 
-        verify(restaurantService).addRestaurant(any()); //뭘 넣든지 작동할 수 있도록, Mockito에서 제공
+        verify(restaurantService).addRestaurant(any()); //any():뭘 넣든지 작동할 수 있도록, Mockito에서 제공
     }
 ```
 
