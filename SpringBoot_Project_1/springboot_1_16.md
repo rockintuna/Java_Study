@@ -43,7 +43,7 @@ public class Restaurant {
     @GeneratedValue
     private Long id;
 
-    @Transient //통과ll
+    @Transient //영속화에서 제외   
     private List<MenuItem> menuItems = new ArrayList<MenuItem>();
 
 ~
