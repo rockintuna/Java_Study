@@ -1,4 +1,4 @@
-[02. What, How, Hello world](springboot_1_02.md)  
+[01. What, How, Hello world](springboot_1_01.md)  
 [05. Test Driven Development(TDD)   ](springboot_1_05.md)  
 [06. REST API   ](springboot_1_06.md)  
 [07. 가게 목록, 가게 상세  ](springboot_1_07.md)  
