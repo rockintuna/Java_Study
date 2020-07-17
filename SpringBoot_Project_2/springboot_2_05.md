@@ -71,7 +71,7 @@ Entity, Repository 생성 및 테스트
 @AllArgsConstructor
 @NoArgsConstructor
 @EqualsAndHashCode //속성이 모두 동일하면 같은 객체로 인식하도록
-//@RequiredArgsConstructor //NonNull 어노테이션으로 필수적인 속성 정의
+//@RequiredArgsConstructor //NonNull 어노테이션으로 정의된 속성으로만 생성자 정의  
 public class Person {
 
     @Id
