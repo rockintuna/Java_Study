@@ -193,9 +193,25 @@ public class Member {
  
  - servlet  
    
-servlet 서버로는 tomcat / jeus / oracle weblogic 등이 있다.  
-JAVA EE에 포함되어있다.  
+EE 버전의 스팩을 구현한 servlet 서버로는 tomcat / jeus / oracle weblogic 등이 있다.  
   
+EE 사용을 위한 의존성 추가
+```
+        <dependency>
+            <groupId>javax.servlet</groupId>
+            <artifactId>javax.servlet-api</artifactId>
+            <version>4.0.1</version>
+            <scope>provided</scope>
+        </dependency>
+```
+
+WAR 설정 추가
+```
+    <groupId>com.mycompany.app</groupId>
+    <artifactId>my-app</artifactId>
+    <version>1.0-SNAPSHOT</version>
+    <packaging>war</packaging>
+```
 
 
 
