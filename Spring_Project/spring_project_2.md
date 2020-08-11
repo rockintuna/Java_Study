@@ -1,7 +1,7 @@
 # 스프링 프로젝트
 ### 스프링 프레임워크 실습 및 프로젝트    
 
-#### 02. IOC (Inversion of Control)
+#### 02. IoC (Inversion of Control)
 
 Spring의 대표적인 특징 중 하나.
 
