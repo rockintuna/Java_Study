@@ -1,7 +1,4 @@
-# 스프링 프로젝트
-### 스프링 프레임워크 실습 및 프로젝트    
-
-#### 03. PSA (Portable Service Abstraction)
+## PSA (Portable Service Abstraction)
 
 이미 잘 만들어진 인터페이스를 사용하는 것.
 확장성이 좋지 못한 코드 또는 기술에 특화되어 있는 코드에 사용하면 좋다.

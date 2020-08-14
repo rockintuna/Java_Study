@@ -1,7 +1,4 @@
-# 스프링 프로젝트
-### 스프링 프레임워크 실습 및 프로젝트    
-
-#### 02. IoC (Inversion of Control)
+## IoC (Inversion of Control)
 
 Spring의 대표적인 특징 중 하나.
 
@@ -308,3 +305,13 @@ Spring에서 제공하는 기본 이벤트
  - ContextClosedEvent
  - RequestHandledEvent
 
+###ResouceLoader
+ : 리소스를 읽어오는 기능을 제공하는 인터페이스  
+ 
+ Resource getResource(String location);
+ 
+ 파일시스템에서 읽어오기  
+ 클래스패스에서 읽어오기(target/classes) getResource("classpath:test.txt");
+    resources에 있는 파일들이 빌드될 때 클래스패스에 들어가게 된다.  
+ URL로 읽어오기 
+ 상대/절대 경로로 읽어오기
