@@ -8,7 +8,10 @@ echo "date: "`date '+%Y-%m-%d %H:%M:%S'` >> ${DIR}/target.out
 echo "categories: " >> ${DIR}/target.out
 echo " - Study" >> ${DIR}/target.out
 echo " - Spring Framework" >> ${DIR}/target.out
-echo "tags: spring" >> ${DIR}/target.out
+echo "tags: " >> ${DIR}/target.out
+echo " - Spring" >> ${DIR}/target.out
+echo " - Spring MVC" >> ${DIR}/target.out
+echo " - Servlet" >> ${DIR}/target.out
 echo "---" >> ${DIR}/target.out
 
 cat $FILENAME >> ${DIR}/target.out
