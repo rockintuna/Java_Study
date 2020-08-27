@@ -3,7 +3,7 @@ export DIR=/Users/ijeong-in
 export NEWFILENAME=`echo "hexo_"${FILENAME}`
 
 echo "---" > ${DIR}/target.out
-echo "title: "`cat $FILENAME | grep $'##' | sed 's/## //g'` >> ${DIR}/target.out
+echo "title: "`cat $FILENAME | grep ^'## ' | sed 's/## //g'` >> ${DIR}/target.out
 echo "date: "`date '+%Y-%m-%d %H:%M:%S'` >> ${DIR}/target.out
 echo "categories: " >> ${DIR}/target.out
 echo " - Study" >> ${DIR}/target.out

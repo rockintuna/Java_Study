@@ -206,6 +206,22 @@ DispatcherServlet 등록, Servlet WebApplicationContext용 Config 파일이 필�
     </servlet-mapping>
 ```
 
+또는 WebApplicationInitializer 인터페이스를 통해 Java 코드로 등록할 수 있다.
+```
+public class WebApplication implements WebApplicationInitializer {
+    @Override
+    public void onStartup(ServletContext servletContext) throws ServletException {
+        AnnotationConfigWebApplicationContext context = new AnnotationConfigWebApplicationContext();
+        context.register(WebConfig.class);
+        context.refresh();
+
+        DispatcherServlet dispatcherServlet = new DispatcherServlet(context);
+        ServletRegistration.Dynamic app = servletContext.addServlet("app", dispatcherServlet);
+        app.addMapping("/app/*");
+    }
+}
+```
+
 DispatcherServlet을 하나만 사용할 경우는 계층구조를 하지 않아도 된다.
 (Servlet WebApplicationContext에 모든 빈을 등록하면 된다.)
 
@@ -241,7 +257,7 @@ DispatcherServlet을 하나만 사용할 경우는 계층구조를 하지 않아
 
 DispatcherServlet이 사용하는 여러가지 멀티파트 전략들이 구성될때,  
 만약 ApplicationContext에 커스텀하게 특정 전략 타입의 빈으로 등록되어 있다면 해당 전략을 사용하고,  
-ApplicationContext에 그런 빈이 없다면 기본적으로 제공되는 전략(defaultStrategies)을 사용하게 된다.  
+ApplicationContext에 그런 빈이 없다면 기본적으로 제공되는 전략(defaultStrategies : DispatcherServlet.properties)을 사용하게 된다.  
 
 
 /WEB-INF 에서 .jsp로 끝나는 뷰를 찾아주는 커스텀 ViewResolver
@@ -259,3 +275,43 @@ ApplicationContext에 그런 빈이 없다면 기본적으로 제공되는 전�
 참고로 Strategy interface의 구현체들을 찾아내고 빈으로 등록하는 일련의 과정들은 DispatcherServlet이 초기화될 때의 한번만 일어나기 때문에 이 후 요청에서는 생략된다.  
 (서블릿의 라이프 사이클에서 init()이 한번만 수행되는 것과 동일함)
 
+### 스프링 MVC 구성 요소
+
+#### MultipartResolver
+파일 업로드 요청 처리에 필요한 인터페이스  
+HttpServletRequest를 MultipartHttpServletRequest로 변환해주어 요청이 담고있는 File을 꺼낼 수 있는 API제공  
+
+Spring의 DispatcherServlet에서는 default로 null인데, Spring Boot에서는 StandardServletMultipartResolver가 등록된다.  
+
+#### LocaleResolver
+클라이언트의 위치 정보를 파악하는 인터페이스 (요청 분석 단계)  
+기본 전략은 요청의 accept-language를 보고 판단한다.  (AcceptHeaderLocaleResolver)
+
+#### ThemeResolver
+애플리케이션에 설정된 테마를 파악하고 변경할 수 있는 인터페이스  
+Spring MVC의 Theme switch 기능을 담당한다.  
+(theme 값에 따라 다른 css를 사용하는 등의 기능 처리)
+
+#### HandlerMapping
+요청을 처리할 핸들러를 찾는 인터페이스  
+주로 RequestMappingHandlerMapping(annotation 기반)이 사용됨
+
+#### HandlerAdapter
+HandlerMapping이 찾아낸 핸들러를 처리하는 인터페이스  
+핸들러를 개발자들이 원하는대로 만들 수 있게 해주는 스프링 MVC 확장력의 핵심이다.  
+주로 RequestMappingHandlerAdapter(annotation 기반)가 사용됨
+
+#### HandlerExceptionResolver
+요청 처리 중 발생한 에러를 처리하는 인터페이스  
+주로 ExceptionHandlerExceptionResolver(@ExceptionHandler annotation 기반)가 사용됨
+
+#### RequestToViewNameTranslator
+핸들러에서 뷰 이름을 명시적으로 리턴하지 않은 경우, 요청을 기반으로 뷰 이름을 판단하는 인터페이스  
+
+#### ViewResolver
+뷰 이름에 해당하는 뷰를 찾아내는 인터페이스  
+
+#### FlashMapManager
+FlashMap 인스턴스를 가져오고 저장하는 인터페이스  
+FlashMap은 주로 리다이렉션을 사용할 때 요청 매개변수를 사용하지 않고 데이터를 전달하고 정리할 때 사용한다.  
+폼서브미션을 방지하기 위한 일종의 패턴  
