@@ -61,6 +61,19 @@ public class Person {
 ```
 
 get 메서드는 ID를 파라미터로 받는데, 받은 파라미터가 문자열이더라도
-자동으로 등록된 도메인 클래스 컨버터에 의해 Person 객체로 변환될 수 있다.  
-이때 도메인 클래스 컨버터는 내부적으로 findById() 메서드를 사용한다.  
+자동으로 등록된 도메인 클래스 컨버터에 의해 Person 객체로 변환될 수 있다.    
 
+#### 테스트
+```
+    @Test
+    public void hello() throws Exception {
+        Person person = new Person();
+        person.setName("이정인");
+        Person savedPerson = personRepository.save(person);
+
+        mockMvc.perform(MockMvcRequestBuilders.get("/hello")
+                .param("id",savedPerson.getId().toString()))
+                .andDo(print())
+                .andExpect(content().string("hello이정인"));
+    }
+```
