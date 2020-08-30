@@ -3,7 +3,7 @@
 프로퍼티 값을 타겟 객체에 설정하는 기능.  
 즉, 사용자 입력값(문자열)을 객체가 가지고 있는 int, Date, Boolean 또는 도메인 타입 등으로 변환해 넣어주는 기능이다.  
 
-###PropertyEditor
+### PropertyEditor
 DataBinder가 변환 작업에 사용하는 인터페이스.  
 
 문자열을 객체로 변환하는 Editor 만들기
@@ -27,9 +27,9 @@ PropertyEditorSupport는 PropertyEditor의 구현체이다.
     }
 ```
 
-###Converter와 Formatter
+### Converter와 Formatter
 
-####Converter
+#### Converter
 Source 타입을 Target 타입으로 변환, 상태 정보가 없기 때문에(stateless) 쓰레드 세이프하다.
 
 ```
@@ -42,7 +42,7 @@ public class StringToEventConverter implements Converter<String, Event> {
 }
 ``` 
 
-WebMvcConfigurer 에서 설정, ConverterRegistry에 등록하여 사용한다.
+WebMvcConfigurer 에서 설정, FormatterRegistry 등록하여 사용한다.
 ```
 @Configuration
 public class WebConfig implements WebMvcConfigurer {
@@ -54,7 +54,7 @@ public class WebConfig implements WebMvcConfigurer {
 }
 ```
 
-####Formatter
+#### Formatter
 보다 Web에 특화된 인터페이스
 String과 Object 변환, Locale에 따른 i18n 기능.
 
@@ -85,7 +85,7 @@ public class WebConfig implements WebMvcConfigurer {
 }
 ```
 
-####ConversionService
+#### ConversionService
 Converter/Formatter는 DataBinder 대신에 ConversionService에서 쓰레드 세이프하게 실제 변환 작업이 수행된다.  
 스프링 MVC, 빈(value) 설정, SpEL에서 사용한다.  
 DefaultFormattingConversionService
