@@ -68,4 +68,8 @@ public class WebConfig implements WebMvcConfigurer {
 
 새로운 빈을 추가할 필요 없이 @EnableWebMvc가 제공하는 빈에 추가 설정을 한다는 장점이 있다.  
 
+### 스프링 부트의 스프링 MVC 설정
+추가적인 전략이 자동으로 DispatcherServlet에 추가된다.  
 
+HandlerMapping으로 resourceHandlerMapping 추가, 정적 resource 지원  
+ 
