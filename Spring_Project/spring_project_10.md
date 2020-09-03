@@ -315,6 +315,15 @@ XmlRootElement를 스캔할 수 있도록 setPackagesToScan 설정 필요
 
 테스트에서는 jsonPath 또는 xPath로 응답 본문을 체크할 수 있다.
 
+#### 기타 설정
+ - 기본 제공 외의 ReturnValueHandler 추가 
+ - 기본 제공 외의 ArgumentResolver 추가
+ - 뷰 컨트롤러 설정, 단순하게 요청 URL을 특정 뷰로 연결하고 싶을 때 사용
+ - 비동기 설정, 비동기 요청 처리에 사용할 타임아웃이나 TaskExecutor 설정
+ - Content Negotiation 설정, 요청 본문 또는 응답 본문을 어떤 타입으로 보내야 하는지의 전략 설정
+ - CORS 설정, Cross Origin 요청 처리 설정, 같은 도메인에서 온 요청이 아니더라도 처리를 허용하고 싶을 때
+ - 뷰 리졸버 설정, 핸들러에서 리턴하는 뷰 이름에 해당하는 문자열을 View 인스턴스로 바꿔줄 뷰 리졸버 설정 
+
 ### 스프링 부트의 스프링 MVC 설정
 추가적인 전략이 자동으로 DispatcherServlet에 추가된다.  
 
