@@ -105,5 +105,45 @@ public @interface GetHelloMapping {
 }
 ```
    
+### 핸들러 메소드 
+
+#### 핸들러 메소드 아규먼트와 리턴 타입
+
+ - 핸들러 메소드 아규먼트
+ : 주로 요청 그 자체 또는 요청에 들어있는 정보를 받아오는데 사용
  
-  
+WebRequest, NativeWebRequest, ServletRequest, HttpServletRequest : 요청 또는 응답 자체에 접근 가능한 API
+
+InputStream, Reader, OutputStream, Writer : 요청 본문을 읽어오거나, 응답 본문을 쓸 때 사용할 수 있는 API
+
+PushBuilder : HTTP/2 리소스 푸쉬에 사용 (스프링 5)
+
+HttpMethod : 요청의 Http 메서드에 대한 정보
+
+Locale, TimeZone, ZoneId : LocaleResolver가 분석한 요청의 Locale 정보
+
+@PathVariable : URL 템플릿 변수 읽을 때 사용
+
+@MatrixVariable : URL 경로 중에 키/값 쌍을 읽어올 때 사용
+
+@RequestParam : 서블릿 요청 매게변수 값을 선언한 메소드 아규먼트 타입으로 변환, 단순 타입에서는 생략 가능
+
+@RequestHeader : 요청 해더 값을 선언한 메소드 아규먼트 타입으로 변환 
+
+@RequestBody : 요청 본문을 HttpMessageConverter를 사용해 특정 타입으로 변환
+
+ - 핸들러 메소드 리턴
+ : 주로 응답 또는 모델을 렌더링할 뷰에 대한 정보를 제공하는데 사용
+ 
+@ResponseBody : 리턴 값을 HttpMessageConverter를 사용해 응답 본문으로 사용한다.
+
+HttpEntity, ResponseEntity : 응답 본문 뿐 아니라 헤더 정보까지 전체 응답을 만들 때 사용한다.
+
+String : ViewResolver를 사용해서 뷰를 찾을 떄 사용할 뷰 이름
+
+View : 암묵적인 모델 정보를 랜더링할 뷰 인스턴스
+
+Map, Model : 암묵적으로 판단한 뷰를 랜더링할 때 사용할 모델 정보
+
+@ModelAttribute : 암묵적으로 판단한 뷰를 랜더링할 때 사용할 모델 정보에 추가한다.
+
