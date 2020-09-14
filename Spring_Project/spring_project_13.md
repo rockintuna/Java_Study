@@ -147,3 +147,67 @@ Map, Model : 암묵적으로 판단한 뷰를 랜더링할 때 사용할 모델 
 
 @ModelAttribute : 암묵적으로 판단한 뷰를 랜더링할 때 사용할 모델 정보에 추가한다.
 
+#### URI 패턴을 아규먼트로
+
+ - @PathVariable  
+ 요청 URL 패턴의 일부를 핸들러 메소드 아규먼트로 받는 방법  
+ 타입 변환 지원  
+ 값이 반드시 있어야 한다.  
+ Optional 지원  
+ 
+ - @MatrixVariable  
+ @PathVariable과 유사하나 아규먼트로 키/값쌍을 받는다.
+ 별도의 활성화가 필요하다.
+ 
+```
+@Configuration
+public class WebConfig implements WebMvcConfigurer {
+
+    @Override
+    public void configurePathMatch(PathMatchConfigurer configurer) {
+        UrlPathHelper urlPathHelper = new UrlPathHelper();
+        //세미콜론을 제거하지 않도록 설정
+        urlPathHelper.setRemoveSemicolonContent(false);
+        
+        configurer.setUrlPathHelper(urlPathHelper);
+    }
+}
+```
+
+```
+    @GetMapping("/events/{id}")
+    @ResponseBody
+    public Event getEvent(@PathVariable("id") Long id, @MatrixVariable String name) {
+        //key = "name", value = ?  
+        Event event = new Event();
+        event.setId(id);
+        event.setName(name);
+        return event;
+    }
+```
+
+#### 요청 매개변수를 아규먼트로
+
+ - @RequestParam  
+요청 매개변수에 있는 단순 타입 데이터를 메서드 아규먼트로 받을 수 있다. ("/events?id=20" 또는 폼 데이터)  
+값이 반드시 있어야 한다. (또는 required=false, Optional 사용하여 기본값 설정 등)  
+String이 아닌 값들은 타입 변환을 지원한다.  
+Map을 사용하여 모든 매개변수를 받아올 수 있다.  
+
+```
+    @GetMapping("/events")
+    @ResponseBody
+    public Event getEvent(@RequestParam("id") Long id) {
+        Event event = new Event();
+        event.setId(id);
+        return event;
+    }
+```
+
+#### @ModelAttribute
+
+#### @Validated
+
+#### @SessionAttribute
+
+
