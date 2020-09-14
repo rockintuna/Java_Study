@@ -205,9 +205,289 @@ Map을 사용하여 모든 매개변수를 받아올 수 있다.
 ```
 
 #### @ModelAttribute
+여러 곳에 있는 단순 타입 데이터를 복합 타입 객체로 받아오거나 해당 객채를 새로 만들 때 사용  
+
+```
+    @GetMapping("/events")
+    @ResponseBody
+    public Event getEvents(@ModelAttribute Event event) {
+        return event;
+    }
+```
+
+복합 타입 객체의 각 데이터를 바인딩 하는 방법은 URL, 요청 매개변수, 세션 등이 있다.
+
+값을 바인딩할 수 없는 경우 400 에러가 발생하는데, 
+이 에러를 직접 다루고 싶은 경우 BindingResult 타입의 아규먼트를 추가한다.
+
+```
+    @GetMapping("/events")
+    @ResponseBody
+    public Event getEvents(@ModelAttribute Event event, BindingResult bindingResult) {
+        if(bindingResult.hasErrors()) {
+            System.out.println("================");
+            bindingResult.getAllErrors().forEach(c -> {
+                System.out.println(c);
+            });
+        }
+        return event;
+    }
+```
+
+에러 발생 없이 에러정보는 BindingResult에 들어가고, 바인딩 되지 않은 값은 null이 된다.
+
+만약 바인딩 이후에 추가적인 검증작업이 필요한 경우 @Valid 또는 @Validated 애노테이션 사용  
+(ex) Event 객체의 limit 속성은 항상 1이상이어야 한다.
+
+```
+    @Min(1)
+    private Integer limit;
+```
+
+```
+    @GetMapping("/events")
+    @ResponseBody
+    public Event getEvents(@Valid @ModelAttribute Event event, BindingResult bindingResult) {
+        if(bindingResult.hasErrors()) {
+            System.out.println("================");
+            bindingResult.getAllErrors().forEach(c -> {
+                System.out.println(c);
+            });
+        }
+        return event;
+    }
+```
+이때 @Valid 검증에 의해 bindingResult에 에러가 들어감에도 불구하고
+해당 값은 바인딩 됨에 유의.
 
 #### @Validated
+@Valid와는 다르게 validation group이라는 힌트를 사용하여 그룹 클래스를 지정할 수 있다.  
+그룹을 지정하지 않은 경우 @Valid와 동일하게 동작한다.
+
+두개의 validation group 생성
+```
+    interface ValidateLimit {}
+    interface ValidateName {}
+
+    private Long id;
+
+    @NotBlank(groups = ValidateName.class)
+    private String name;
+
+    @Min(value = 1,groups = ValidateLimit.class)
+    private Integer limit;
+```
+
+특정 그룹만 검증하기
+```
+    @GetMapping("/events")
+    @ResponseBody
+    public Event getEvents(@Validated(Event.ValidateName.class) @ModelAttribute Event event, BindingResult bindingResult) {
+        if(bindingResult.hasErrors()) {
+            System.out.println("================");
+            bindingResult.getAllErrors().forEach(c -> {
+                System.out.println(c.toString());
+            });
+        }
+        return event;
+    }
+```
+ 
+#### @SessionAttributes
+모델 정보를 HTTP 세션에 저장해주는 애노테이션  
+HttpSession을 직접 사용할 수도 있지만 @SessionAttributes를 사용하면
+설정한 이름에 해당하는 모델 정보를 자동으로 세션에 저장해준다.  
+여러 화면 또는 요청에서 사용되는 객체를 공유할 때 사용한다.  
+```
+@Controller
+@SessionAttributes("event")
+public class EventController {
+```
+
+SessionStatus를 사용해서 특정 폼 처리 완료 후에 세션 데이터를 비우도록 할 수 있다.
+```
+    @PostMapping("/events")
+    public String createEvent(@Validated @ModelAttribute Event event,
+                              BindingResult bindingResult,
+                              SessionStatus sessionStatus) {
+        if(bindingResult.hasErrors()) {
+           return "/events/form";
+        }
+        //todo save
+        sessionStatus.setComplete();
+        return "redirect:/events/list";
+    }
+```
 
 #### @SessionAttribute
 
+HTTP 세션에 들어있는 데이터를 참조할 떄 사용한다.  
+타입 컨버전을 지원, 데이터 수정을 위해서는 HttpSession 사용  
 
+@SessionAttributes는 해당 컨트롤러 내에서만 특정 모델 객체를 공유할때 사용하는 한편,  
+@SessionAttribute는 컨트롤러 밖(인터셉터 또는 필터 등)에서 만들어준 세션 데이터에 접근할 때 사용한다.  
+
+접속 시간을 기록하여 Session에 저장하는 인터셉트를 생성하고 (등록 필요)
+핸들러 메서드에서 사용하기
+
+```
+public class VisitTimeInterceptor implements HandlerInterceptor {
+
+    @Override
+    public boolean preHandle(HttpServletRequest request, HttpServletResponse response, Object handler) throws Exception {
+        HttpSession session = request.getSession();
+        if (session.getAttribute("visitTime") == null) {
+            session.setAttribute("visitTime", LocalDateTime.now());
+        }
+        return true;
+    }
+}
+```
+
+```
+    @Override
+    public void addInterceptors(InterceptorRegistry registry) {
+        registry.addInterceptor(new VisitTimeInterceptor());
+    }
+```
+
+```
+    @GetMapping("/events/list")
+    public String getEvents(@ModelAttribute Event event,
+                            Model model,
+                            SessionStatus sessionStatus,
+                            @SessionAttribute LocalDateTime visitTime) {
+        System.out.println(visitTime);
+        List<Event> eventList = new ArrayList<>();
+        eventList.add(event);
+
+        model.addAttribute("eventList",eventList);
+        sessionStatus.setComplete();
+        return "/events/list";
+    }
+```
+
+#### RedirectAttributes
+리다이렉트 할 때는 Model에 들어있는 primitive type 데이터가 URI 쿼리 매개변수에 추가된다.  
+(ex localhost:8080/events/list?name=mvc&limit=50)    
+
+스프링부트에서 기능 활성화를 위해서는 Ignore-default-model-on-redirect 프로퍼티를 사용해야 한다.  
+
+application.properties
+```
+spring.mvc.ignore-default-model-on-redirect=false
+```
+
+리다이렉트할 때 원하는 데이터만 전달하고 싶을 때는 RedirectAttributes에 명시적으로 추가하여 사용할 수 있다.  
+```
+    @PostMapping("/events/form/limit")
+    public String eventsFormLimitSubmit(@Validated @ModelAttribute Event event,
+                                        BindingResult bindingResult,
+                                        SessionStatus sessionStatus,
+                                        RedirectAttributes attributes) {
+        if(bindingResult.hasErrors()) {
+            return "/events/form-limit";
+        }
+        //todo save
+        attributes.addAttribute("name", event.getName());
+        attributes.addAttribute("limit", event.getLimit());
+        sessionStatus.setComplete();
+        return "redirect:/events/list";
+    }
+```
+
+리다이렉트 요청을 처리하는 곳에서 쿼리 매개변수를 @RequestParam 또는 @ModelAttribute로 받을 수 있다.
+```
+    @GetMapping("/events/list")
+    public String getEvents(@ModelAttribute("newEvent") Event event,
+                            Model model,
+                            @SessionAttribute LocalDateTime visitTime) {
+        System.out.println(visitTime);
+
+        List<Event> eventList = new ArrayList<>();
+        eventList.add(event);
+
+        model.addAttribute("eventList",eventList);
+        return "/events/list";
+    }
+```
+요청 매개변수를 복합객체로 받기 위해 @ModelAttribute를 사용할 때, 
+@SessionAttributes에서 세션에 저장한 이름과 동일하게 받는다면
+우선적으로 객체를 세션에서 찾게 되기 때문에 에러가 발생할 수 있다. 
+그러므로 SessionAttributes와는 다른 이름으로 받아야 요청 매개변수를 통해 객체로 바인딩할 수 있다.  
+
+#### Flash Attributes
+주로 리다이렉트 중에 데이터를 전달하는 목적으로 사용한다.  
+데이터가 URI에 노출되지 않고 임의의 객체를 사용할 수 있다.  
+
+RedirectAttributes의 addFlashAttribute 메서드를 사용하여 객체를 HTTP 세션에 저장하여 넘겨준다.  
+리다이렉트 요청을 처리 한 다음 세션에서 제거된다.  
+```
+    @PostMapping("/events/form/limit")
+    public String eventsFormLimitSubmit(@Validated @ModelAttribute Event event,
+                                        BindingResult bindingResult,
+                                        SessionStatus sessionStatus,
+                                        RedirectAttributes attributes) {
+        if(bindingResult.hasErrors()) {
+            return "/events/form-limit";
+        }
+        //todo save
+        attributes.addFlashAttribute("newEvent",event);
+        sessionStatus.setComplete();
+        return "redirect:/events/list";
+    }
+```
+
+넘겨받은 객체는 Model에 자동으로 들어가기 때문에
+리다이렉트 요청을 처리하는 곳에서는 @ModelAttribute로 선언하여 객체를 받을 필요 없이 
+Model에서 꺼내어 쓰면 된다.  
+```
+    @GetMapping("/events/list")
+    public String getEvents(Model model,
+                            @SessionAttribute LocalDateTime visitTime) {
+        System.out.println(visitTime);
+
+        List<Event> eventList = new ArrayList<>();
+        eventList.add((Event) model.asMap().get("newEvent"));
+
+        model.addAttribute("eventList",eventList);
+        return "/events/list";
+    }
+```
+
+#### MultipartFile
+파일 업로드에 사용하는 메소드 아규먼트  
+MultipartResolver 빈이 설정되어 있어야 사용할 수 있다.
+(스프링부트에서는 MultipartAutoConfiguration에 의해 자동으로 설정된다.)  
+POST mulripart/form-data 요청이 들어있는 파일을 참조할 수 있다.  
+List<MultipartFile> 아규먼트로 여러 파일을 참조할 수 있다.  
+
+파일 업로드 폼 예시
+```
+<body>
+<div th:if="${message}">
+    <h2 th:text="${message}"/>
+</div>
+
+<form method="POST" enctype="multipart/form-data" action="#" th:action="@{/file}">
+    File : <input type="file" name="file"/>
+    <input type="submit" name="Upload"/>
+</form>
+```
+
+```
+    @GetMapping("/file")
+    public String fileUploadForm(Model model) {
+        return "files/index";
+    }
+
+    @PostMapping("/file")
+    public String fileUpload(@RequestParam MultipartFile file,
+                             RedirectAttributes attributes) {
+        //todo file storage service
+        String message = file.getOriginalFilename() + " is uploaded.";
+
+        attributes.addFlashAttribute("message",message);
+        return "redirect:/file";
+    }
+```
