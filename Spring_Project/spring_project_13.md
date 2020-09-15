@@ -598,6 +598,8 @@ public class EventApi {
     }
 ```
 
+### Controller 설정
+
 #### @ModelAttribute의 다른 사용법
  - 해당 컨트롤러의 모든 요청에서 공통적으로 사용하는 모델 초기화하기  
 
