@@ -491,3 +491,216 @@ List<MultipartFile> 아규먼트로 여러 파일을 참조할 수 있다.
         return "redirect:/file";
     }
 ```
+
+#### File Download
+스프링 ResourceLoader 사용  
+
+ - ResouceLoader
+ : 리소스를 읽어오는 기능을 제공하는 인터페이스  
+ Resource getResource(String location);
+  
+파일 다운로드 응답 헤더에 설정 할 내용
+ - CONTENT_DISPOSITION : 사용자가 파일을 받을 때 사용할 파일 이름
+ - CONTENT_TYPE : 파일의 미디어 타입
+ - CONTENT_LENGTH : 파일의 크기
+ 
+```
+    @Autowired
+    private ResourceLoader resourceLoader;    
+
+    @GetMapping("/file/{filename}")
+    public ResponseEntity<Resource> fileDownload(@PathVariable String fileName) throws IOException {
+        Resource resource = resourceLoader.getResource("classpath:"+fileName);
+
+        File file = resource.getFile();
+
+        Tika tika = new Tika();
+        String mediaType = tika.detect(file);
+
+        return ResponseEntity.ok()
+                .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\""+resource.getFilename()+"\"")
+                .header(HttpHeaders.CONTENT_TYPE, mediaType)
+                .header(HttpHeaders.CONTENT_LENGTH, file.length()+"")
+                .body(resource);
+    }
+```
+
+ - 리턴 타입 ResponseEntity : 응답 본문, 응답 헤더, 응답 상태 코드를 설정할 수 있는 리턴 타입이다. <>에는 응답 본문의 타입을 넣어준다.  
+ - Tika : File의 미디어 타입을 알아낼 수 있다.
+```
+        <dependency>
+            <groupId>org.apache.tika</groupId>
+            <artifactId>tika-core</artifactId>
+            <version>1.20</version>
+        </dependency>
+
+```
+
+#### @RequestBody & HttpEntity
+
+ - @RequestBody  
+ 요청 본문에 들어있는 데이터를 HttpMessageConverter를 통해 변환한 객체로 받을 수 있다.  
+ @Valid 또는 @Validated와 같이 사용하여 검증을 진행할 수 있다.  
+ BindingResult 아규먼트를 사용해 코드로 바인딩 또는 검증 에러를 확인할 수 있다.  
+ 
+```
+@RestController
+@RequestMapping("/api/events")
+public class EventApi {
+
+    @PostMapping
+    public Event createEvent(@RequestBody Event event) {
+        return event;
+    }
+}
+```
+ 
+ - HttpEntity  
+ @RequestBody와 비슷하지만 추가적으로 요청 헤더 정보를 사용할 수 있다.  
+
+```
+@RestController
+@RequestMapping("/api/events")
+public class EventApi {
+
+    @PostMapping
+    public Event createEvent(HttpEntity<Event> request) {
+        System.out.println(request.getHeaders().getContentType());
+        return request.getBody();
+    }
+}
+```
+ 
+#### @ResponseBody & ResponseEntity
+
+ - @ResponseBody  
+ 핸들러 메서드의 리턴 데이터를 HttpMessageConverter를 통해 변환 후에 응답 본문 메시지로 보낼때 사용  
+ @RestController를 사용하면 모든 핸들러 메서드에 적용된다.  
+
+```
+    @PostMapping
+    @ResponseBody
+    public Event createEvent(@RequestBody @Valid Event event) {
+        return event;
+    }
+```
+ - ResponseEntity  
+ 응답 헤더 상태 코드 본문을 직접 다루고 싶은 경우에 사용한다.  
+ 
+```
+    @PostMapping
+    public ResponseEntity<Event> createEvent(@RequestBody @Valid Event event,
+                                             BindingResult bindingResult) {
+        if (bindingResult.hasErrors()) {
+            return ResponseEntity.badRequest().build();
+        }
+        return ResponseEntity.ok(event);
+    }
+```
+
+#### @ModelAttribute의 다른 사용법
+ - 해당 컨트롤러의 모든 요청에서 공통적으로 사용하는 모델 초기화하기  
+
+```
+    @ModelAttribute
+    public void categories(Model model) {
+        model.addAttribute("categories",List.of("study", "seminar", "hobby", "social"));
+    }
+```
+
+ - 메서드에 붙이면 리턴하는 객체를 모델에 넣어준다.  
+ 이 때는 RequestToViewNameTranslator에 의해 URL 이름으로 view 선택
+
+```
+    @GetMapping("/events/form-name")
+    @ModelAttribute
+    public Event newEvent() {
+        return new Event();
+    }
+```
+
+#### DataBinder : @InitBinder
+특정 컨트롤러에서 바인딩 또는 검증 설정을 변경하고 싶을 때 사용  
+
+바인딩 설정  
+webDataBinder.setDisallowedFields();
+
+포매터 설정  
+webDataBinder.addCustomFormatter();
+
+Validator 설정  
+webDataBinder.addValidators();
+
+또는 특정 이름의 모델 객체에만 바인딩 또는 검증 설정 적용
+```
+    @InitBinder("event")
+```
+
+이벤트에 대한 데이터를 바인딩할때 id를 바인딩하지 않도록 설정
+```
+    @InitBinder("event")
+    public void initEventBinder(WebDataBinder webDataBinder) {
+        webDataBinder.setDisallowedFields("id");
+    }
+```
+
+#### 예외 처리 핸들러 : @ExceptionHandler
+특정 예외가 발생한 요청을 처리하는 핸들러를 정의한다.  
+일반적인 핸들러 메서드와 비슷하게 작성할 수 있다.  
+
+```
+    @ExceptionHandler
+    public String eventErrorHandler(EventException exception, Model model) {
+        model.addAttribute("message", "event error");
+        return "error";
+    }
+```
+
+Rest API의 경우 보통 ResponseEntity를 사용하여 예외에 대한 정보를 응답 본문으로 전달한다.  
+```
+    @ExceptionHandler
+    public ResponseEntity errorHandler(EventException exception) {
+        return ResponseEntity.badRequest().body("can't create event.");
+    }
+```
+
+#### 전역 컨트롤러 : @ControllerAdvice  
+
+@InitBinder, @ExceptionHandler, @ModelAttribute 를 모든 컨트롤러에서 사용하고 싶을 때 사용
+
+```
+@ControllerAdvice
+public class GlobalController {
+    @ExceptionHandler
+    public String eventErrorHandler(EventException exception, Model model) {
+        model.addAttribute("message", "event error");
+        return "error";
+    }
+
+    @InitBinder
+    public void initEventBinder(WebDataBinder webDataBinder) {
+        webDataBinder.setDisallowedFields("id");
+    }
+
+    @ModelAttribute
+    public void categories(Model model) {
+        model.addAttribute("categories", List.of("study", "seminar", "hobby", "social"));
+    }
+
+}
+```
+
+적용할 범위를 지정할 수 있다.  
+ - 특정 애노테이션이 걸려있는 컨트롤러에만 적용
+```
+@ControllerAdvice(annotations = RestController.class)
+```
+ - 특정 패키지 이하의 컨트롤러에만 적용
+```
+@ControllerAdvice("me.rockintuna.demowebmvc")
+```
+ - 특정 클래스 타입에만 적용 
+```
+@ControllerAdvice(assignableTypes = {EventController.class, EventApi.class})
+```
+
