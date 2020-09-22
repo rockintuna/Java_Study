@@ -24,7 +24,7 @@ junit5에서는 junit4와 다르게 테스트 메서드가 public이 강제되�
 모의 http request와 response를 만들어서 테스트하는 것이 MockMvc test이다.  
 
 ```
-@SpringBootTest //Spring Boot Test임을 명
+@SpringBootTest //Spring Boot Test임을 명시
 class HelloWorldControllerTest {
 
     @Autowired

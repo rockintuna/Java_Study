@@ -11,9 +11,8 @@ echo " - Spring Boot" >> ${DIR}/target.out
 echo "tags: " >> ${DIR}/target.out
 echo " - Spring" >> ${DIR}/target.out
 echo " - Spring Boot" >> ${DIR}/target.out
-echo " - Dependency" >> ${DIR}/target.out
-echo " - @EnableAutoConfiguration" >> ${DIR}/target.out
 echo "---" >> ${DIR}/target.out
+echo "{% img img_class /img/springboot.png 430 270 "'spring-boot'" %}" >> ${DIR}/target.out
 
 cat $FILENAME >> ${DIR}/target.out
 
