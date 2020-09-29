@@ -1,4 +1,4 @@
-## 스프링 부트 활용
+## 스프링 부트 활용 (핵심 기능)
 
 ### SpringApplication
 
@@ -209,4 +209,158 @@ public class FishProperties {
     private String name;
 
 ```
+
+### 프로파일
+
+@Profile : 
+특정 프로파일에서 사용할 @Configuration 또는 @Component를 등록한다.
+```
+@SpringBootApplication
+@Profile("test")
+public class TestWebMvcApplication {
+
+    public static void main(String[] args) {
+        SpringApplication app = new SpringApplication(DemoWebMvcApplication.class);
+        app.setWebApplicationType(WebApplicationType.NONE);
+        app.run(args);
+    }
+
+}
+```
+
+프로퍼티를 통해 설정할 수 있다.  
+spring.profile.active : 어떤 프로파일을 활성화할 것인지 결정한다.  
+spring.profile.include : 어떤 프로파일을 추가할 것인지 결정한다.  
+
+application-{profile_name}.properties : 프로파일 용 프로퍼티 파일
+
+### 로깅
+
+대표적으로 두가지 로깅 퍼사드가 있다.  
+Commons Logging 와 SLF4j  
+로거는 로깅 퍼사드의 구현체이다.(JUL, Log4J2, Logback)
+
+spring framework core에는 Commons Logging이 들어있는데
+SLF4j를 사용하려면 여러 의존성 설정이 필요했었다.
+
+Spring 5 부터는 Spring-JCL을 통해 exclusion 없이 로깅 퍼사드를 변경할 수 있게 되었다.  
+
+사실 로거를 JUL이나 Log4J2를 사용하더라도 로깅은 자동으로 SLF4j로 전달되며
+결과적으로 spring은 로거로써 Logback을 사용하게 된다.  
+
+#### 스프링 부트 로깅
+
+--debug : 일부 핵심 라이브러리만 디버그 모드로 실행  
+--trace : 전부 다 디버그 모드로 실행  
+
+spring.output.ansi.enabled : 컬러 출력  
+logging.file 또는 logging.path : 파일 출력  
+logging.level.패키지 : 로그 레벨 조정  
+
+로깅 사용 예시
+```
+@Component
+public class SampleRunner implements ApplicationRunner {
+
+    private Logger logger = LoggerFactory.getLogger(SampleRunner.class);
+
+    @Autowired
+    private FishProperties fishProperties;
+
+    @Override
+    public void run(ApplicationArguments args) throws Exception {
+        logger.info("======================");
+        logger.info(fishProperties.getName());
+        logger.info(Integer.toString(fishProperties.getAge()));
+        logger.info(fishProperties.getFullName());
+        logger.info("======================");
+    }
+}
+```
+
+#### 로깅 커스터마이징
+
+커스텀 로그 설정 파일 사용  
+Logback : logback-spring.xml
+Log4J2 : log4j2-spring.xml
+JUL : logging.properties
+
+```
+<?xml version="1.0" encoding="UTF-8" ?>
+<configuration>
+    <include resource="org/springframework/boot/logging/logback/base.xml"/>
+    <logger name="me.rockintuna" level="DEBUG"/>
+</configuration>
+```
+
+Logback extension
+
+ - 프로파일 사용가능
+```
+<springProfile name="test">
+    <configuration>
+        ~~
+    </configuration>
+</springProfile>
+```
+ - Environment 프로퍼티 <springProperty>
+```
+<springProperty scope="context" name="fishName" source="fish.name">
+${fishName}
+```
+ 
+### 테스트
+
+의존성
+```
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-test</artifactId>
+            <scope>test</scope>
+        </dependency>
+```
+
+#### 테스트 관련 애노테이션
+
+@SpringBootTest : 통합 테스트용 애노테이션  
+ - @RunWith(SpringRunner.class)과 함께 사용해야 한다.
+ - @SpringBootApplication을 참조자여 자동으로 빈 추가
+ - webEnvironment 설정
+   - MOCK : mock servlet environment. 내장 톰캣을 구동하지 않는다.
+   - RANDOM_PORT, DEFINED_PORT : 내장 톰캣을 사용한다.
+   - NONE : 서블릿 환경을 제공하지 않는다.
+   
+```
+@Runwith(SpringRunner.class)
+@SpringBootTest
+@AutoConfigureMockMvc
+class EventApiTest {
+}
+```
+
+@MockBean : ApplicationContext에 있는 빈을 Mock으로 만든 객체로 교체한다.  
+모든 테스트(@Test)마다 자동으로 리셋한다.  
+(ex 컨트롤러 테스트에서 서비스는 Mock으로 만들고 싶을 때)
+
+```
+    @MockBean
+    private EventService mockEventService;
+
+    @Test
+    public void getName() throws Exception {
+        when(mockEventService.getEventName()).thenReturn("Test Event");
+        ~~
+    }
+```
+
+#### 슬라이스 테스트
+Bean Mocking을 최소화하기 위해 레이어 별로 잘라서 테스트를 할 수 있다.  
+
+@JsonTest : Model이 json에 들어갔을때의 상황을 테스트 할 수 있다.  
+@WebMvcTest(대상) : 특정 Web관련 컴포넌트 하나만 테스트 할 때 사용한다.  
+@WebFluxTest  
+@DataJpaTest  
+...
+
+
 
