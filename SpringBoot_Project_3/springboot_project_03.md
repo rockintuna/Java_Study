@@ -323,3 +323,140 @@ SQL 스크립트를 사용한 DB 초기화
  - schema.sql 또는 schema-${platform}.sql : App 실행시 스키마 작업
  - data.sql 또는 data-${platform}.sql : App 실행시 데이터 작업
  - ${platform} 값은 spring.datasource.platform 으로 설정 가능
+
+### 스프링 시큐리티
+
+#### 스프링 부트 시큐리티 자동 설정
+
+dependency
+```
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-security</artifactId>
+        </dependency>
+```
+
+스프링 시큐리티 관련 자동 설정
+ - SecurityAutoConfiguration (스프링 시큐리티 자동 설정)
+ - UserDetailsServiceAutoConfiguration (기본 사용자 생성)
+ - DefaultAuthenticationEventPublisher 빈 등록, 다양한 인증 에러 핸들러 등록 가능
+
+의존성을 추가하면 자동 설정에 의해 모든 요청이 인증(Authorization)을 요구하게 된다.
+(사실은 부트의 자동 설정이 WebSecurityConfigurerAdapter(스프링 시큐리티의 기본 설정 클리스)의 
+설정을 그대로 사용하기 때문이다.)  
+또한 인증 가능한 정보(user/generated security password)와 login 페이지를 제공한다.  
+또는 프로퍼티로 수정한다.
+
+```
+spring.security.user.name
+spring.security.user.password
+```
+
+기본적으로 Basic 인증과 폼 인증이 둘 다 적용되는데, 요청의 accept 헤더에 따라 응답이 달라진다.   
+(ex) text/html -> 폼 인증 ("redirect:/login")
+
+#### 스프링 시큐리티 테스트
+
+spring security test dependency
+```
+        <dependency>
+            <groupId>org.springframework.security</groupId>
+            <artifactId>spring-security-test</artifactId>
+            <version>${spring-security.version}</version>
+            <scope>test</scope>
+        </dependency>
+```
+
+@WithMockUser : 테스트 시 인증된 Mock User를 생성하여 테스트할 수 있다.
+```
+    @Test
+    @WithMockUser
+    public void hello() throws Exception {
+        mvc.perform(MockMvcRequestBuilders.get("/hello"))
+                .andDo(print())
+                .andExpect(status().isOk())
+                .andExpect(view().name("hello"));
+    }
+```
+
+#### 스프링 시큐리티 커스터마이징
+
+WebSecurityConfigurerAdapter 타입의 빈을 등록하면 부트의 스프링 시큐리티 자동 설정은 사용되지 않는다.  
+```
+@Configuration
+public class WebSecurityConfig extends WebSecurityConfigurerAdapter {
+    @Override
+    protected void configure(HttpSecurity http) throws Exception {
+        http.authorizeRequests()
+                // "/","/hello" 는 인증 없이 허가
+                .antMatchers("/","hello").permitAll()
+                // 그 외 다른 요청은 인증 필요 
+                .anyRequest().authenticated()
+                .and()
+                //폼 로그인 사용 (accept html)
+                .formLogin()
+                .and()
+                //httpBasic 사용 (not html)
+                .httpBasic();
+    }
+}
+```
+
+UserDetailsService 타입의 빈을 등록하면 부트의 기본 사용자 생성을 사용하지 않는다.  
+```
+@Service
+public class AccountService implements UserDetailsService {
+
+    private AccountRepository accountRepository;
+
+    @Autowired
+    public AccountService(AccountRepository accountRepository) {
+        this.accountRepository = accountRepository;
+    }
+
+    public Account createUser(AccountDto accountDto) {
+        if (accountRepository.findByEmail(accountDto.getEmail()) == null) {
+            Account account = new Account(accountDto);
+            return accountRepository.save(account);
+        } else {
+            throw new EmailExistException("이미 사용중인 Email 입니다.");
+        }
+    }
+
+    @Override
+    public UserDetails loadUserByUsername(String name) throws UsernameNotFoundException {
+        Optional<Account> byName = accountRepository.findByName(name);
+        Account account = byName.orElseThrow(() -> new UsernameNotFoundException(name));
+        return new User(account.getName(), account.getPassword(), authorities());
+    }
+
+    private Collection<? extends GrantedAuthority> authorities() {
+        return Arrays.asList(new SimpleGrantedAuthority("ROLE_USER"));
+    }
+}
+```
+
+Password Encoding을 사용해야 한다.  
+```
+    @Bean
+    public PasswordEncoder passwordEncoder() {
+        return PasswordEncoderFactories.createDelegatingPasswordEncoder();
+    }
+```
+
+### 스프링 REST 클라이언트
+
+#### RestTemplate
+Blocking I/O 기반의 Synchronous API  
+부트는 RestTemplateAutoConfiguration에 의해 spring-web 모듈이 있다면 
+RestTemplateBuilder를 빈으로 등록해준다.  
+기본적으로 java.net.HttpURLConnection을 사용한다.  
+RestTemplateCustomizer를 빈으로 등록하여 전역적으로 커스터마이징 할 수 있다.
+
+#### WebClient
+non-Blocking I/O 기반의 Asynchronous API  
+부트는 WebClientAutoConfiguration 의해 spring-webflux 모듈이 있다면 
+WebClient.Builder를 빈으로 등록해준다.  
+기본적으로 Reactor Netty의 HTTP 클라이언트를 사용한다.  
+WebClientCustomizer를 빈으로 등록하여 전역적으로 커스터마이징 할 수 있다.
+ 
