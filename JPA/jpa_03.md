@@ -112,6 +112,19 @@ LocalDate, LocalDateTime 타입은 애노테이션을 생략할 수 있다.
  @TableGenerator를 이용하여 사용할 테이블 커스텀 가능
  - AUTO : 방언에 따라 자동 지정
 
+IDENTITY 전략의 특징 : 
+DB에 insert 되기 전에는 PK 값을 알 수 없다.  
+한편 JPA는 커밋 시점에서야 insert 쿼리를 전달하기 때문에 문제가 발생한다.  
+그래서 IDENTITY 전략에서만 예외적으로 persist() 시점에 insert 쿼리를 전달한다.  
+ 
+SEQUENCE 전략의 특징 : 
+persist() 시점에서 PK 값이 필요하기 때문에 정의된 시퀀스를 참조하는 작업이 수행된다.  
+때문에 persist() 마다 DB 접근이 필요한데, 이때의 성능 최적화를 위해 
+@SequenceGenerator의 allicationSize(default 50) 속성으로 
+DB의 현재 Sequence 값을 미리 설정값 만큼 증가시켜두고
+증가된 부분은 추가적인 DB 접근 없이 메모리에서 불러올 수 있다.  
+TABLE 전략의 @TableGenerator:allicationSize도 위와 마찬가지이다.  
+
 
 ### 연관관계 맵핑 기초
 

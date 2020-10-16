@@ -92,7 +92,7 @@ Bean으로 등록된 Class만 Bean을 꺼내어 쓸 수 있다.
  @Autowired/@Inject를 붙인다면 생성자/필드/Setter에 붙이게 된다.
    
 ###@Autowired에 대하여...  
-어노테이션을 setter에 달려있고 의존성의 Bean이 없을 때, 
+어노테이션이 setter에 달려있고 의존성의 Bean이 없을 때, 
 setter임에도 불구하고 생각과 달리 다른 경우와 마찬가지로 객체생성이 불가능할 수 있는데
 Spring이 해당 의존성을 위해 Bean을 찾기 때문이다.
 이를 피하기 위해서는 @Autowired(required = false)로 설정하여 의존성 주입이 안된 상태로 생성할 수 있다.  
