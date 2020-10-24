@@ -378,4 +378,242 @@ Product
 
 ### 고급 매핑
 
+#### 상속 관계 매핑
+객체에는 상속 관계가 있지만 RDB의 테이블에는 상속 관계가 없다.
+그나마 객체 상속과 유사한 것이 슈퍼타입/서브타입 관계 모델링 기법이다.
 
+상속 관계 매핑 : 객체의 상속 구조와 DB의 슈퍼타입/서브타입 관계를 매핑
+
+DB에서 슈퍼타입/서브타입 관계를 물리적인 모델로 구현하는 방법
+ - 각각 테이블로 변환 => 조인 전략 
+ - 통합 테이블로 변환 => 단일 테이블 전략
+ - 서브타입 테이블로 변환 => 구현 클래스마다 테이블 전략
+
+세가지 중 어떤 구현 방식을 사용하더라도 JPA에서 매핑할 수 있다.
+
+상속 관계 매핑
+```
+@Entity
+public class Book extends Item {
+    private String author;
+    private String isbn;
+    ~
+}
+```
+```
+@Entity
+public class Album extends Item {
+    private String artist;
+    ~
+}
+```
+```
+@Entity
+public class Movie extends Item {
+    private String director;
+    private String actor;
+    ~
+}
+```
+객체 상속만 하고 아무런 설정도 하지 않으면 JPA는 기본적으로 단일 테이블 전략을 사용한다.  
+그러므로 부모 객체 엔티티에 매핑되는 테이블에 모든 속성이 추가된다.
+```
+Hibernate: 
+    
+    create table Item (
+       DTYPE varchar(31) not null,
+        ITEM_ID bigint not null,
+        name varchar(255),
+        price integer not null,
+        stockQuantity integer not null,
+        artist varchar(255),
+        author varchar(255),
+        isbn varchar(255),
+        actor varchar(255),
+        director varchar(255),
+        primary key (ITEM_ID)
+    )
+```
+단일 테이블 전략은 하위 객체를 구별하기 위한 "DTYPE" 컬럼이 필수이기 때문에 자동으로 생성된다.
+
+전략을 변경하기 위해서는 @Inheritance(strategy = InheritanceType.xxx) 어노테이션을 사용한다.
+ - InheritanceType.JOINED : 조인 전략
+ - InheritanceType.SINGLE_TABLE : 단일 테이블 전략
+ - InheritanceType.TABLE_PER_CLASS : 구현 클래스마다 테이블 전략
+  
+@DiscriminatorColumn 어노테이션은 "DTYPE" 컬럼(String, 하위 객체명)을 추가한다.
+(만약 하위 객체명 대신 다른 값으로 대체하고 싶다면 하위 객체에서 @DiscriminatorValue 사용)
+```
+@Entity
+@Inheritance(strategy = InheritanceType.JOINED)
+@DiscriminatorColumn
+public abstract class Item {
+    ~
+}
+```
+
+조인 전략은 슈퍼타입과 서브타입을 모두 테이블로 생성하며 
+서브타입 테이블들은 각각 슈퍼타입 PK를 참조하는 FK를 가지게 된다.
+```
+Hibernate: 
+    
+    create table Item (
+       ITEM_ID bigint not null,
+        name varchar(255),
+        price integer not null,
+        stockQuantity integer not null,
+        primary key (ITEM_ID)
+    )
+Hibernate: 
+    
+    create table Album (
+       artist varchar(255),
+        ITEM_ID bigint not null,
+        primary key (ITEM_ID)
+    )
+Hibernate: 
+    
+    create table Book (
+       author varchar(255),
+        isbn varchar(255),
+        ITEM_ID bigint not null,
+        primary key (ITEM_ID)
+    )
+Hibernate: 
+    
+    create table Movie (
+       actor varchar(255),
+        director varchar(255),
+        ITEM_ID bigint not null,
+        primary key (ITEM_ID)
+    )
+Hibernate: 
+    
+    alter table Album 
+       add constraint FK75mrpprv8oigh00y92tibw7id 
+       foreign key (ITEM_ID) 
+       references Item
+Hibernate: 
+    
+    alter table Book 
+       add constraint FK2srbe8wjbanr4vtkrsb8atq7o 
+       foreign key (ITEM_ID) 
+       references Item
+Hibernate: 
+    
+    alter table Movie 
+       add constraint FKqqwswm36y8uqoh9emtoruoxcv 
+       foreign key (ITEM_ID) 
+       references Item
+```
+자식 객체를 저장할때(persist()), 
+서브타입 테이블 뿐만 아니라 슈퍼타입 테이블에도 insert 된다.  
+자식 객체를 조회하면 슈퍼타입/서브타입 테이블을 조인하여 조회한다.  
+
+구현 클래스마다 테이블 전략 적용
+```
+@Entity
+@Inheritance(strategy = InheritanceType.TABLE_PER_CLASS)
+public abstract class Item {
+    ~
+}
+```
+구현 클래스마다 테이블 전략은 상위 추상 클래스 엔티티에 매핑되는 테이블을 생성하지 않고
+하위 클래스를 매핑하는 테이블만 생성한다.  
+구현 클래스마다 테이블 전략에서는 @DiscriminatorColumn 어노테이션이 의미가 없다.(사용되지 않는다.)
+
+구현 클래스마다 테이블 전략에서 상위 추상 클래스를 통해 조회할때, 하위 클래스를 모두 조회해야 한다는 단점이 있다.
+```
+    Item item = em.find(Item.class, movie.getId());
+```
+```
+Hibernate: 
+    select
+        item0_.ITEM_ID as item_id1_5_0_,
+        item0_.name as name2_5_0_,
+        item0_.price as price3_5_0_,
+        item0_.stockQuantity as stockqua4_5_0_,
+        item0_.artist as artist1_0_0_,
+        item0_.author as author1_1_0_,
+        item0_.isbn as isbn2_1_0_,
+        item0_.actor as actor1_7_0_,
+        item0_.director as director2_7_0_,
+        item0_.clazz_ as clazz_0_ 
+    from
+        ( select
+            ITEM_ID,
+            name,
+            price,
+            stockQuantity,
+            artist,
+            null as author,
+            null as isbn,
+            null as actor,
+            null as director,
+            1 as clazz_ 
+        from
+            Album 
+        union
+        all select
+            ITEM_ID,
+            name,
+            price,
+            stockQuantity,
+            null as artist,
+            author,
+            isbn,
+            null as actor,
+            null as director,
+            2 as clazz_ 
+        from
+            Book 
+        union
+        all select
+            ITEM_ID,
+            name,
+            price,
+            stockQuantity,
+            null as artist,
+            null as author,
+            null as isbn,
+            actor,
+            director,
+            3 as clazz_ 
+        from
+            Movie 
+    ) item0_ 
+where
+    item0_.ITEM_ID=?
+```
+
+전략 별 장단점  
+
+조인 전략
+ - 장점
+    - 테이블 정규화
+    - 외래 키 참조 무결성 제약조건 활용 가능
+    - 효율적인 저장공간 사용
+ - 단점
+    - 조인을 통한 조회로 성능저하
+    - 복잡한 조회 쿼리
+    - 저장 시 insert 2회 호출
+    
+단일 테이블 전략
+ - 장점
+    - 조인이 필요 없어서 조회 성능이 좋음
+    - 단순한 조회 쿼리
+ - 단점
+    - 자식 엔티티가 매핑한 컬럼은 모두 null 허용
+    - 테이블 하나에 모든 데이터를 저장하기 때문에 조회 성능이 오히려 느려질 수 있음 
+
+구현 클래스마다 테이블 전략 (비추)
+ - 장점
+    - 서브타입을 명확하게 구분해서 처리할 때 효과적
+    - not null 제약조건 사용 가능
+ - 단점
+    - 여러 자식 테이블을 함께 조회할 때 성능이 느림(union)
+    - 자식 테이블을 통합해서 쿼리하기 어려움
+
+#### @MappedSuperClass
+
+### 프록시와 연관관계 관리
