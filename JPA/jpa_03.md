@@ -614,6 +614,136 @@ where
     - 여러 자식 테이블을 함께 조회할 때 성능이 느림(union)
     - 자식 테이블을 통합해서 쿼리하기 어려움
 
-#### @MappedSuperClass
+#### @MappedSuperclass
+테이블과 관계 없고 단순히 엔티티들이 공통으로 사용하는 매핑 정보를 모아 가지고 있는 역할을 한다.  
+주로 등록일, 수정일, 등록자, 수정자 같은 전체 엔티티에서 공통적으로 적용하는 매핑 정보를 모을 때 사용된다.  
+참고로 @Entity는 다른 엔티티나 @MappedSuperclass로 지정된 클래스만 상속받을 수 있다.
+```
+@MappedSuperclass
+public abstract class BaseEntity {
+    
+    @Column(name = "INSERT_MEMBER")
+    private String createdBy;
+    private LocalDateTime createdDate;
+    @Column(name = "UPDATE_MEMBER")
+    private String lastModifiedBy;
+    private LocalDateTime lastModifiedDate;
+    ~
+}
+```
+
+부모 클래스가 가지는 속성들만 상속받을 수 있다.
+```
+@Entity
+public class Member extends BaseEntity {
+    ~
+}
+```
+상속 관계 매핑이 아니며 부모 클래스를 조회할 수 없다. (em.find(BaseEntity) x)  
+직접 생성하여 사용할 일이 없으므로 추상 클래스로 생성할 것을 권장한다.
 
 ### 프록시와 연관관계 관리
+
+#### 프록시
+em.find(엔티티 클래스, id) : 데이터베이스를 통하여 실제 엔티티 객체 조회
+em.getReference(엔티티 클래스, id) : 데이터베이스 조회를 미루는 가짜(프록시) 엔티티 객체 조회
+
+프록시의 특징
+ - 실제 엔티티를 상속 받아서 만들어지며 겉 모양은 실제 엔티티와 동일하다. 타입 체크시 주의가 필요하다. (== 대신 instanceof 사용)  
+ - 실제 객체의 참조(target)를 보관한다.  
+ - 호출되면 실제 객체의 메소드를 대신 호출한다.  
+ - 처음 사용할 때 딱 한번만 초기화하며, 초기화할때는 프록시 객체가 실제 객체가 되는 것이 아니라
+ target을 통해 실제 객체에 접근하는 것이다.
+ - 찾는 엔티티가 이미 영속성 컨텍스트에 있으면 실제 엔티티를 반환한다.
+ - 준영속성 상태에서는 초기화할 때 예외가 발생한다. (실제 객체 참조를 위한 영속성 컨텍스트의 도움을 받을 수 없기 때문)
+ - 이론적으로는 진짜 객체인지 프록시 객체인지 구분하지 않고 사용하면 된다.
+
+```
+    //프록시 객체 조회 
+    //여기까지는 member는 프록시 객체이며 target은 null이다.
+    Member member = em.getReference(Member.class, 1L);
+
+    //초기화 요청, 이때 실제 엔티티를 조회하기 위해 DB에 접근한다.
+    //조회된 실제 엔티티가 target이 된다. 
+    member.getName();
+```
+
+em.find()으로도 프록시 객체가 리턴되는 경우가 있는데,
+같은 엔티티 조회가 프록시 객체로 먼저 조회되었을 때이다.
+```
+    //프록시 객체 조회
+    Member member1 = em.getReference(Member.class, 1L);
+    //em.find()이지만 member1과 같은 프록시 객체가 된다.
+    Member member2 = em.find(Member.class, 1L);
+```
+
+프록시 객체 확인하기
+
+프록시 인스턴스 초기화 여부 확인 : 
+PersistenceUnitUtil.isLoaded(Object entity)
+```
+    emf.getPersistenceUnitUtil().isLoaded(member);
+```
+프록시 클래스 확인 : 
+entity.getClass()
+```
+    System.out.println(member.getClass());
+```
+프록시 강제 초기화 : 
+org.hibernate.Hibernate.initialize(entity)
+```
+    Hibernate.initialize(member);
+```
+
+#### 즉시 로딩과 지연 로딩
+
+엔티티를 조회할 때, 
+비즈니스 로직상 연관 관계가 있는 엔티티까지 같이 조회 할 필요가 없다면?  
+ => 지연 로딩(LAZY)을 사용하여 연관 관계 엔티티를 프록시로 조회할 수 있다.
+ 그러면 DB에서는 실제로 사용할 엔티티만 조회한다.
+```
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "MEMBER_ID")
+    private Member member;
+```
+
+```
+    //member.Team은 프록시로 조회
+    Member member = em.find(Member.class, 1L);
+    
+    //실제 사용되는 시점에서 프록시 초기화 발생 
+    member.getTeam().getName();
+```
+
+그렇지 않고 연관 관계의 엔티티까지 자주 함께 사용되는 경우에는?  
+ => 즉시 로딩(EAGER)을 사용하여 함께 실제 객체로 조회한다.
+ JPA 구현체는 가능하면 조인을 사용하여 SQL 한번으로 함께 조회한다.
+```
+    @ManyToOne(fetch = FetchType.EAGER)
+    @JoinColumn(name = "MEMBER_ID")
+    private Member member;
+```
+
+```
+    //Member와 Team을 DB에서 함께 조회
+    Member member = em.find(Member.class, 1L);
+```
+
+프록시와 즉시 로딩(EAGER) 주의
+ - 즉시 로딩을 사용하면 예상치 못한 SQL 발생 가능
+ - JPQL에서 N+1 문제 발생
+ - @ManyToOne, @OneToOne은 기본적으로 즉시 로딩 사용 (LAZY로 변경 필요)
+ - @OneToMany, @ManyToMany는 기본적으로 지연 로딩 사용
+ 
+=> 가급적 지연 로딩(LAZY)만 사용하자
+
+N+1 문제?  
+JPQL은 사용자가 작성한 JPQL 문을 SQL로 번역하여 실행되는데,
+번역된 SQL이 먼저 실행된 후에 로딩 방식을 알게 된다.  
+이때 로딩 방식이 지연 로딩이면 상관 없겠지만, 
+즉시 로딩인 경우에는 연관 관계의 엔티티를 조회하기 위해서 
+처음 번역된 SQL문으로 얻은 row 수(N) 만큼 추가로 SQL이 발생하게 되어 성능에 치명적인 단점을 가지게된다.   
+=> 지연 로딩 사용 또는 JPQL fetch join 사용
+
+#### 영속성 전이(CASCADE)와 고아 객체
+
