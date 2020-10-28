@@ -113,7 +113,7 @@ class Student {
 
     @Override
     public int hashCode() {
-        return studentNum; //equals()에서 사용한 멤버변수를 활
+        return studentNum; //equals()에서 사용한 멤버변수를 활용
     }
 }
 

@@ -745,5 +745,230 @@ JPQL은 사용자가 작성한 JPQL 문을 SQL로 번역하여 실행되는데,
 처음 번역된 SQL문으로 얻은 row 수(N) 만큼 추가로 SQL이 발생하게 되어 성능에 치명적인 단점을 가지게된다.   
 => 지연 로딩 사용 또는 JPQL fetch join 사용
 
-#### 영속성 전이(CASCADE)와 고아 객체
+#### 영속성 전이(CASCADE)
+특정 엔티티를 영속 상태로 만들 때 연관된 엔티티도 함께 영속 상태로 만들고 싶을 때 사용  
+ex) 부모 엔티티를 저장할 때 자식 엔티티도 함께 저장
 
+```
+    @OneToMany(mappedBy = "parent", cascade = CascadeType.ALL)
+    private List<Child> childList = new ArrayList<>();
+```
+
+```
+    parent.getChildList.add(child1);
+    parent.getChildList.add(child2);
+    
+    em.persist(parent);
+    //아래 영속화는 cascade에 의해 자동으로 이루어진다.
+    //em.persist(child1);
+    //em.persist(child2);
+```
+
+엔티티를 영속화할 때 연관된 엔티티도 함께 영속화하는 편리함을 제공할 뿐,
+영속성 전이는 연관관계를 매핑하는 것과는 아무런 관련이 없다.
+
+CASCADE의 종류
+ - CascadeType.ALL : 모두 적용
+ - CascadeType.PERSIST : 영속
+ - CascadeType.REMOVE : 삭제
+ - CascadeType.MERGE : 병합
+ - CascadeType.REFRESH : REFRESH
+ - CascadeType.DETACH : DETACH
+
+주의)  
+두 엔티티의 라이프사이클이 유사할 때만 사용하자.  
+참조하는 곳이 하나인 경우(특정 엔티티가 개인 소유할 때)만 사용하자.
+ 
+#### 고아 객체
+고아 객체 제거 : 부모 엔티티와 연관 관계가 끊어진 자식 엔티티를 자동으로 삭제
+
+orphanRemoval = true
+```
+    @OneToMany(mappedBy = "parent", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<Child> childList = new ArrayList<>();
+```
+
+자식 엔티티를 컬렉션에서 제거할 경우 자동으로 delete문이 발생한다.
+```
+    parent.getChildList().remove(0);
+```
+
+또는 부모 엔티티가 제거되는 경우 연관 관계에 있는 자식 엔티티도 자동으로 삭제된다.  
+이 경우는 CascadeType.REMOVE 처럼 동작한다.
+```
+    em.remove(parent);
+```
+
+주의)  
+참조하는 곳이 하나인 경우(특정 엔티티가 개인 소유할 때)만 사용하자.  
+@OneToOne, @OneToMany만 사용 가능하다.  
+
+CASCADE와 orphanRemoval를 사용하면 부모 엔티티를 통해서 자식 엔티티의 생명주기를 관리할 수 있다.
+, 이런 특징은 도메인 주도 설계(DDD)의 Aggregate Root개념을 구현할 때 유용하다.
+ 
+### 값 타입
+
+JPA의 데이터 타입 분류 
+
+엔티티 타입
+ - @Entity로 정의하는 객체
+ - 데이터가 변해도 식별자로 지속해서 추적할 수 있다.
+ 
+값 타입
+ - int, Integer, String처럼 단순히 값으로 사용하는 자바 기본 타입이나 객체
+ - 식별자가 없고 값만 있기 때문에 식별자로 추적할 수 없다.
+ 
+값 타입의 분류
+
+기본값 타입
+ - 자바 기본 타입(int, double)
+ - 래퍼 클래스(Integer, Long)
+ - String
+
+임베디드 타입(embedded type, 복합 값 타입)
+
+컬렉션 값 타입(collection value type)
+
+#### 기본값 타입
+ex) String name, int age  
+
+생명 주기를 엔티티에 의존한다.  
+ex) 회원 엔티티를 삭제하면 이름, 나이 필드도 함께 삭제된다.  
+
+값 타입은 공유하면 안된다.  
+ex) 회원 이름 변경 시 다른 회원의 이름도 함께 변경되면 안된다.  
+자바 기본 타입은 항상 값을 복사한다.  
+Integer 같은 래퍼 클래스나 String 같은 특수한 클래스는 공유가 가능하지만 변경이 불가능하다.
+
+#### 임베디드 타입
+새로운 값 타입을 직접 정의할 수 있다.  
+주로 기본값 타입들을 모아서 만들기 때문에 복합 값 타입이라고도 한다.  
+
+임베디드 타입 사용법  
+ - @Embeddable : 값 타입을 정의하는 곳에 표시  
+ - @Embedded : 값 타입을 사용하는 곳에 표시  
+ - 기본 생성자가 필수이다.
+ - 임베디드 타입의 값이 null이면 매핑되는 컬럼 값은 모두 null이다.
+
+```
+@Embeddable
+public class Period {
+    private LocalDateTime startDate;
+    private LocalDateTime endDate;
+    ~
+}
+```
+```
+@Embeddable
+public class Address {
+    private String city;
+    private String street;
+    private String zipcode;
+    ~
+}
+```
+```
+    @Embedded
+    private Period period;
+    
+    @Embedded
+    private Address address;
+```
+
+임베디드 타입과 테이블 매핑
+ - 임베디드 타입은 엔티티의 값일 뿐이다.
+ - 임베디드 타입을 사용하든 안하든 매핑하는 테이블은 변하지 않는다.
+ - 객체와 테이블을 아주 세밀하게 매핑하는 것이 가능하다.(find-grained)
+ - 잘 설계한 ORM 애플리케이션은 매핑한 테이블의 수보다 클래스의 수가 더 많다.
+
+임베디드 타입의 장점
+ - 재사용성
+ - 높은 응집도
+ - 해당 값 타입 전용 메소드 생성 가능
+ - 소유한 엔티티에 생명주기를 의존한다.
+ 
+@AttributeOverride : 속성 재정의  
+한 엔티티에서 같은 임베디드 타입을 사용할 수 있다.   
+@AttributeOverrides, @AttributeOverride를 사용하여 컬럼 명 속성을 재정의 한다.
+```
+    @Embedded
+    private Period period;
+
+    @Embedded
+    @AttributeOverrides({
+        @AttributeOverride(name = "startDate", column = @Column(name = "EMP_START")),
+        @AttributeOverride(name = "endDate", column = @Column(name = "EMP_END"))
+    })
+    private Period empPeriod;    
+```
+
+#### 값 타입과 불변 객체
+임베디드 타입은 그 특징상 여러 엔티티에서 공유가 가능한데,
+값 타입은 공유하게 되면 부작용(side effect)가 발생할 수 있기 때문에 위험하다.  
+자바 기본 타입은 값을 복사하지만,
+임베디드 타입은 객체 타입이기 때문에
+참조 값을 직접 대입하는 것을 막을 방법이 없으며, 공유 참조를 피할 수 없다.  
+만약, 객체 타입을 수정할 수 없게 만들면 부작용을 원천 차단할 수 있다.
+
+불변 객체(immutable object) : 생성 시점 이후 절대 값을 변경할 수 없는 객체 
+ - 값 타입은 불변 객체로 설계해야 한다.
+ - 생성자로만 값을 설정하고 수정자를 만들지 않는다. (또는 private로 설정)
+ - Integer, String은 자바가 제공하는 대표적인 불변 객체이다.
+ - 변경이 필요하다면 인스턴스를 새로 생성.
+
+=> 임베디드 타입을 사용할 때는 불변 객체로 생성하자. 
+
+#### 값 타입의 비교
+값 타입은 인스턴스가 달라도 그 안의 값이 같다면 비교했을 때 같은 것으로 봐야한다.
+
+동일성(identity) 비교 : 인스턴스의 참조 값을 비교 (==)  
+동등성(equivalence) 비교 : 인스턴스가 포함하는 값을 비교 (equals())  
+
+값 타입을 비교할 때는 a.equals(b)를 이용하여 동등성 비교를 해야한다.
+equals() 메소드는 기본적으로 ==를 사용하기 때문에 적절한 재정의가 필요하다.
+
+```
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        Period period = (Period) o;
+        return Objects.equals(startDate, period.startDate) &&
+                Objects.equals(endDate, period.endDate);
+    }
+```
+
+#### 값 타입 컬렉션
+엔티티의 하나의 속성에 값 타입을 하나 이상 저장할 때 사용한다.
+
+@ElementCollection, @CollectionTable 어노테이션 사용
+
+한편, RDB 테이블의 개별 필드는 컬렉션을 저장할 수 없으므로 
+컬렉션을 저장하기 위한 별도의 테이블이 필요하다.
+
+```
+    @ElementCollection
+    @CollectionTable(name = "FAVORITE_FOOD", 
+        joinColumns = @JoinColumn(name = "MEMBER_ID")
+    )
+    @Column(name = "FOOD_NAME") //여기서의 @Column은 FAVORITE_FOOD 테이블의 컬럼 정보이다.
+    private Set<String> favoriteFoods = new HashSet<>();
+
+    @ElementCollection
+    @CollectionTable(name = "ADDRESS",
+        joinColumns = @JoinColumn(name = "MEMBER_ID")
+    )    
+    private List<Address> addressHistory = new ArrayList<>();    
+```
+
+값 타입 컬렉션의 특징
+ - 값 타입 컬렉션은 기본적으로 지연 로딩을 사용한다.
+ - 값 타입의 생명주기는 엔티티에 종속되어야 하기 때문에, 
+영속성 전이 + 고아 객체 제거 기능이 필수적이라고 할 수 있다.
+
+값 타입 컬렉션의 제약 사항
+ - 값 타입은 엔티티와 달리 식별자가 없어서 변경시 추적할 수가 없다.
+ - 변경이 발생하면 주인 엔티티와 관련된 모든 데이터를 삭제하고 값 타입 컬렉션에 있는 현재 값을 모두 다시 저장한다.
+ - 값 타입 컬렉션을 매핑하는 테이블은 모든 컬럼을 묶어서 기본 키를 구성해야 한다.
+
+=> 값 타입 컬렉션 대신 일대다 관계(영속성 전이 + 고아 객체 제거 기능 포함)를 고려 
