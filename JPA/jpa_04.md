@@ -105,3 +105,123 @@ System.out.println("name = "+memberDTO.getName());
 System.out.println("age = "+memberDTO.getAge());
 ```
 
+#### 페이징
+JPA는 페이징을 다음 두 API로 추상화하였다.  
+
+ - setFirstResult(int startPosition) : 조회 시작 위치(0 부터)
+ - setMaxResult(int maxResult) : 조회 할 데이터 수
+```
+    em.createQuery("select m from Member m order by m.age desc", Member.class);
+        .setFirstResult(0)
+        .setMaxResult(10)
+        .getResultList();
+```
+
+#### 조인
+JOIN 절에도 테이블이 아닌 엔티티가 와야한다. (ex) m.team t
+
+JOIN : 내부 조인  
+LEFT JOIN : 외부 조인  
+
+세타 조인도 가능은 하다. (FROM에 두 엔티티)
+```
+em.createQuery("SELECT m,t FROM Member m, Team t WHERE m.username = t.name");
+```
+
+ON 절 : 조인 대상에서 필터링 할 때 사용한다.
+```
+em.createQuery("SELECT m,t FROM Member m LEFT JOIN m.team t ON t.name = 'A'"); 
+```
+또는 연관관계 없는 엔티티와의 외부 조인에서 사용한다.
+```
+em.createQuery("SELECT m,t FROM Member m LEFT JOIN m.team t ON m.username = t.name"); 
+```
+
+#### 서브 쿼리
+쿼리 내부에 또 한번 쿼리를 작성하여 그 결과를 변수처럼 사용하는 방법.
+
+ - 평균 나이보다 많은 회원
+```
+em.createQuery("SELECT m FROM Member m where m.age > (SELECT avg(m2.age) FROM Member m2)");
+```
+
+서브 쿼리 지원 합수  
+EXISTS (sub query): 서브쿼리에 결과가 존재하면 참 (<> NOT EXISTS)
+
+ALL|ANY|SOME (sub query)  
+ALL : 조건이 모두 만족하면 참
+ANY : 조건이 하나라도 만족하면 참 (== SOME)
+
+IN (sub query) : 서브 쿼리의 결과 중 하나라도 같은 것이 있다면 참 (<> NOT IN)
+
+JPA 서브 쿼리 한계  
+ - JPA는 WHERE, HAVING 절에서만 서브 쿼리를 사용할 수 있다.(하이버네이트에서는 SELECT 절에서도 사용가능하다.)
+ - JPQL은 FROM 절에서 서브 쿼리가 불가능하다.
+ 
+#### JPQL 타입 표현
+
+문자 : 'Hello', 'She''s'  
+숫자 : 10L, 10D, 10F  
+Boolean : TRUE, FALSE  
+ENUM : example.MemberType.ADMIN (패키지명을 포함해야한다, 길기 때문에 보통은 파라미터 바운딩 사용)  
+엔티티 타입 : TYPE(i) = Book (상속 관계에서 사용, SQL에서는 DTYPE으로 필터링)
+```
+"select i from Item i where type(i) = Book"
+```
+
+#### CASE 식
+SELECT 절에 조건을 추가하여 결과를 조건에 따라 다르게 받을 수 있다.
+ - 기본 CASE 식
+```
+SELECT 
+    CASE WHEN m.age <= 10 THEN '학생요금'
+         WHEN m.age >= 60 THEN '경로요금'
+         ELSE '일반요금'
+    END
+FROM Member m
+```
+
+ - 단순 CASE 식
+```
+SELECT 
+    CASE t.name
+         WHEN 'A' THEN '100명'
+         WHEN 'B' THEN '200명'
+         ELSE '인원제한없음'
+    END
+FROM Team t
+```
+
+ - COALESCE : 첫번째 값이 null이 아니면 두번째 주어진 값을 반환
+```
+SELECT COALESCE(m.username, '이름 없는 회원') FROM Member m
+```
+
+ - NULLIF : 두 값이 같으면 null을 반환, 다르면 첫번째 값 반환 
+```
+SELECT NULLIF(m.username, '관리자') FROM Member m
+```
+
+#### JPQL 사용자 정의 함수
+사용하기 전에 방언 설정에서 먼저 추가해야 한다.
+```
+public class MyH2Dialect extends H2Dialect {
+    public MyH2Dialect() {
+        registerFunction("group_concat", new StandardSQLFunction("group_concat",StandardBasicTypes.STRING));
+    }
+}
+```
+
+hibernate.dialect 변경
+```
+<property name="hibernate.dialect" value="dialect.MyH2Dialect"/>
+```
+
+사용 방법
+```
+em.createQuery("select function('group_concat',m.username) from Member m", String.class);
+```
+```
+em.createQuery("select group_concat(m.username) from Member m", String.class);
+```
+
