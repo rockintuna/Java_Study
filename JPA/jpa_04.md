@@ -225,6 +225,8 @@ em.createQuery("select function('group_concat',m.username) from Member m", Strin
 em.createQuery("select group_concat(m.username) from Member m", String.class);
 ```
 
+### 중급 문법
+
 #### 경로 표현식
 .(점)을 찍어서 객체 그래프를 탐색하는 것
 

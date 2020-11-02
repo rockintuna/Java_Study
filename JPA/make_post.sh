@@ -10,6 +10,7 @@ echo " - Study" >> ${DIR}/target.out
 echo " - JPA" >> ${DIR}/target.out
 echo "tags: " >> ${DIR}/target.out
 echo " - JPA" >> ${DIR}/target.out
+echo " - JPQL" >> ${DIR}/target.out
 echo " - ORM" >> ${DIR}/target.out
 echo " - Mapping" >> ${DIR}/target.out
 echo " - Spring Data JPA" >> ${DIR}/target.out
