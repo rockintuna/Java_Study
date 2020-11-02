@@ -225,3 +225,182 @@ em.createQuery("select function('group_concat',m.username) from Member m", Strin
 em.createQuery("select group_concat(m.username) from Member m", String.class);
 ```
 
+#### 경로 표현식
+.(점)을 찍어서 객체 그래프를 탐색하는 것
+
+경로 표현식 용어 정리
+ - 상태 필드 : 단순히 값을 저장하기 위한 필드
+ - 연관 필드 : 연관 관계를 위한 필드
+    - 단일 값 연관 필드 : @ManyToOne, @OneToOne, 대상이 엔티티
+    - 컬렉션 값 연관 필드 : @OneToMany, @ManyToMany, 대상이 컬렉션
+    
+경로 표현식의 특징
+ - 상태 필드 : 경로 탐색의 끝이며 더 이상 탐색할 수 없다.
+ - 단일 값 연관 필드 : 묵시적 내부 조인 발생, 추가적으로 탐색할 수 있다.
+ - 컬렉션 값 연관 필드 : 묵시적 내부 조인 발생, 더 이상 탐색할 수 없다. 
+
+묵시적 조인의 주의사항
+ - 항상 내부 조인
+ - 컬렉션은 경로 탐색의 끝이며 추가 탐색을 하려면 명시적 조인을 통해 별칭을 얻어야 한다.
+ - 경로 탐색은 주로 SELECT, WHERE 절에서 사용하지만 묵시적 조인으로 인해 SQL의 FROM절에 영향을 준다.
+
+=> 가급적 묵시적 조인 대신 명시적 조인 사용.
+ 
+#### 페치 조인 (fetch join)
+SQL의 조인 종류가 아니고 JPQL에서 성능 최적화를 위해 제공하는 기능이다.  
+연관된 엔티티나 컬렉션을 SQL 한 번에 함께 조회(즉시 로딩)하는 기능이다.  
+일반 조인과 다른 점은 연관된 엔티티를 함께 조회하느냐 마느냐의 차이이다.  
+
+JPQL
+```
+"select m from Member m join fetch m.team"
+```
+SQL 
+```
+select M.*, T.* from MEMBER M inner join TEAM T on M.TEAM_ID = T.ID;
+```
+JPQL에서는 select절에 Member만 있지만 SQL에서는 TEAM 까지 같이 조회한다.  
+이것은 지연로딩으로 설정하더라도 프록시로 조회하지 않고 실제 데이터를 조회하는데,
+엔티티에 직접 적용하는 글로벌 로딩 전략보다 페치 조인이 우선하기 때문이다.
+
+한편, 컬렉션 페치 조인에서는 중복된 결과가 나오게 될 수도 있다.  
+ex) TEAM A에 MEMBER가 2명인 경우  
+```
+    List<Team> resultList = em.createQuery("select t from Team t join fetch t.members", Team.class)
+            .getResultList();
+
+    for (Team team : resultList) {
+        System.out.println("teamname = "+team.getName());
+    }
+```
+결과)  
+teamname = A  
+teamname = A  
+
+이때, 중복 제거를 위해서 DISTINCT를 사용할 수 있다.  
+JPQL의 DISTINCT는 SQL에 DISTINCT를 추가하는 기능 외에
+애플리케이션에서 엔티티 중복을 제거하는 기능도 가지고 있다.(같은 식별자를 가진 엔티티 제거)
+
+ex)   
+```
+    List<Team> resultList = em.createQuery("select distinct t from Team t join fetch t.members", Team.class)
+            .getResultList();
+
+    for (Team team : resultList) {
+        System.out.println("teamname = "+team.getName());
+    }
+```
+결과)  
+teamname = A  
+
+페치 조인의 특징과 한계
+ - 페치 조인 대상에는 별칭을 사용할 수 없다. (Hibernate에서는 가능하지만 가급적 사용하지 않는다.)
+ - 둘 이상의 컬렉션은 페치 조인할 수 없다.
+ - 컬렉션을 페치 조인하면 페이징 API를 사용할 수 없다. (Hibernate는 경고 후 메모리에서 페이징하지만 위험하다.)
+ 
+페이징 API를 써야한다면...  
+ => 컬렉션 페치 조인 대신 단일 값 연관 필드를 페치 조인 한다.  
+ 또는 @BatchSize(size) 애노테이션을 이용하여 페치 조인 대신 N+1 문제를 해결한다.
+ 
+#### 다형성 쿼리
+
+TYPE  
+조회 대상을 특정 자식으로 한정할 수 있다.
+```
+"select i from Item i where type(i) in (Book, Movie)"
+```
+
+TREAT  
+부모 타입을 특정 자식 타입으로 다룰때 사용한다.(자바 다운 캐스팅과 유사하다.)
+```
+"select i from Item i where treat(i as Book).auther = 'kim'"
+```
+
+#### 엔티티 직접 사용
+JPQL에서 엔티티를 사용하면 엔티티의 기본 값(PK)이 사용된다.
+이것은 파라미터로 전달하거나 식별자를 직접 전달해도 동일하다.  
+ex)  
+JPQL
+```
+"select count(m) from Member m"
+```
+SQL
+```
+select count(m.id) from MEMBER m;
+```
+
+또는 연관된 엔티티를 사용하면 엔티티의 외래 키 값(FK)이 사용된다.
+```
+    List<Member> resultList = em.createQuery("select m from Member m where m.team = :team", Member.class)
+        .setParameter("team",team1).getResultList();
+
+    for (Member member : resultList) {
+        System.out.println("member = " + member.getName());
+    }
+```
+SQL
+```
+Hibernate: 
+    /* select
+        m 
+    from
+        Member m 
+    where
+        m.team = :team */ select
+            member0_.MEMBER_ID as member_i1_4_,
+            member0_.createdDate as createdd2_4_,
+            member0_.lastModifiedDate as lastmodi3_4_,
+            member0_.city as city4_4_,
+            member0_.street as street5_4_,
+            member0_.zipcode as zipcode6_4_,
+            member0_.name as name7_4_,
+            member0_.TEAM_ID as team_id8_4_ 
+        from
+            Member member0_ 
+        where
+            member0_.TEAM_ID=?
+```
+JPQL에서는 where 조건에 Team을 주었는데, SQL에서는 FK(TEAM_ID)로 변환되어 실행 됨.
+
+#### Named 쿼리
+미리 정의해서 이름을 부여해두고 사용하는 JPQL이다.  
+ - 정적 쿼리만 가능하다.  
+ - 어노테이션이나 XML에 정의하여 사용한다.
+ - 애플리케이션 로딩 시점에 초기화 후 재사용된다.
+ - 애플리케이션 로딩 시점에 쿼리를 검증한다.(중요)
+ 
+정의하기
+```
+@Entity
+@NamedQuery(
+        name = "Member.findByUsername",
+        query = "select m from Member m where m.name = :name"
+)
+public class Member {
+    ~
+}
+```
+
+사용하기
+```
+List<Member> resultList = em.createNamedQuery("Member.findByUsername", Member.class)
+    .setParameter("name", "member1")
+    .getResultList();
+```
+
+#### 벌크 연산
+쿼리 한번으로 여러 로우(엔티티)를 변경할 수 있다.
+
+ - UPDATE, DELETE 지원
+ - excuteUpdate()의 결과는 영향받은 엔티티의 수를 반환한다.
+ - INSERT 지원 (insert into .. select, Hibernate)
+
+```
+int resultCount = em.createQuery("update Member m set m.createdDate = :createdDate")
+    .setParameter("createdDate", LocalDateTime.now())
+    .executeUpdate();
+```
+
+벌크 연산은 영속성 컨텍스트를 무시하고 DB에 직접 쿼리한다.  
+=> 꼬임 방지를 위해 영속성 컨텍스트 작업보다 먼저 벌크 연산을 수행 하거나,
+ 벌크 연산 후 영속성 컨텍스트를 초기화하자.
