@@ -406,3 +406,4 @@ int resultCount = em.createQuery("update Member m set m.createdDate = :createdDa
 벌크 연산은 영속성 컨텍스트를 무시하고 DB에 직접 쿼리한다.  
 => 꼬임 방지를 위해 영속성 컨텍스트 작업보다 먼저 벌크 연산을 수행 하거나,
  벌크 연산 후 영속성 컨텍스트를 초기화하자.
+
