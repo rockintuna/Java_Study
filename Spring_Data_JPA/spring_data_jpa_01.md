@@ -425,5 +425,62 @@ public interface PostRepository extends JpaRepository<Post, Long>, QuerydslPredi
             .param("sort","title"))
 ```
 
+ - HATEOAS  
+Spring HATEOAS와 연계하여 응답에 페이징과 관련된 링크를 추가할 수 있다. 
+ 
+의존성
+```
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-hateoas</artifactId>
+        </dependency>
+```
+
+PagedResourcesAssembler를 매개변수로 받을 수 있으며 그를 통해 Page를 PagedModel(구 PagedResource)로 변환할 수 있다.
+```
+    @GetMapping("/posts")
+    public PagedModel<EntityModel<Post>> getPosts(Pageable pageable, PagedResourcesAssembler<Post> assembler) {
+        return assembler.toModel(postRepository.findAll(pageable));
+    }
+```
+
 ### Spring Data JPA
+
+#### @EnableJpaRepositories
+
+@EnableJpaRepositories
+ - @Configuration에서 설정해야 JpaRepository를 사용할 수 있다. 
+ - 부트에서는 자동 설정이다.
+ 
+```
+@SpringBootApplication
+@EnableJpaRepositories
+public class Application {
+
+    public static void main(String[] args) {
+        SpringApplication.run(Application.class, args);
+    }
+
+}
+```
+ 
+#### 엔티티 저장하기
+
+JpaRepository의 save()는 단순히 새 엔티티를 추가하는 메서드가 아니다.
+ - Transient 상태의 객체는 EntityManager.persist()
+ - Detached 상태의 객체는 EntityManager.merge()
+
+둘 다 Persistent 상태로 만든다는 것은 동일하지만 내부적인 차이점이 있다.  
+persist()는 파라미터로 받은 객체를 Persistent 상태로 만들지만,  
+merge()는 파라미터로 받은 객체의 복사본을 만들어서 그 복사본을 Persistent 상태로 만든다.  
+save()는 Persistent 상태로 만든 엔티티를 반환하게 되는데 
+그렇기 때문에 persist()는 파라미터와 반환값은 서로 동일한 인스턴스인 반면 merge()는 파라미터와 반환값이 서로 다른 인스턴스이다. 
+=> persist() 이든 merge() 이든 파라미터를 재사용하기보다는 반환값을 이용하자.
+
+엔티티의 상태가 Transient인지 Detached인지 판단하는 기준
+ - 엔티티의 @Id 프로퍼티를 찾아 null이면 Transient, null이 아니면 Detached
+ - 엔티티가 Persistable 인터페이스를 구현하고 있다면 isNew() 메소드에 위임한다.
+ - JpaRepositoryFactory를 상속받는 클래스를 만들고 getEntityInformation()을 오버라이딩해서 자신이 원하는 판단 로직을 구현할 수도 있다.
+ 
+ 
  
