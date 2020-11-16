@@ -31,7 +31,7 @@ spring.jpa.properties.hibernate.format_sql=true
 logging.level.org.hibernate.type.descriptor.sql=true
 ```
 
----
+
 ### Spring Data Common
 여러 저장소 지원 프로젝트(Spring Data JPA, JDBC, KeyValue, 등)의 공통 기능을 제공하는 프로젝트.
 
@@ -47,7 +47,7 @@ Spring Data Common
 Spring Data JPA
  - JpaRepository : JPA 기능 추가
 
----
+
 #### 인터페이스 정의하기
 제공되는 메소드를 사용하지 않고 직접 정의하고 싶다면
 @RepositoryDefinition 애노테이션 사용.
@@ -79,7 +79,7 @@ public interface MyRepository<T, Id extends Serializable> extends Repository<T, 
 ```
 다른 리포지토리에서 이 인터페이스를 상속받아 사용하면 된다.
 
----
+
 #### Null 처리
  - Spring Data 2.0부터 자바 8의 Optional을 지원한다.
  => 반환 값이 없을 때 Null과는 다르며 Optional 객체에서 사용할 수 있는 메소드를 사용할 수 있다.
@@ -90,7 +90,7 @@ public interface MyRepository<T, Id extends Serializable> extends Repository<T, 
  - Null 애노테이션(@NonNullApi, @NonNull, @Nullable)을 지원한다.
  => 런타임 시에 Null여부를 체크할 수 있다.
 
----
+
 #### 쿼리 만들기 개요
 
 쿼리 탐색 전략
@@ -156,7 +156,7 @@ Stream<User> readAllByFirstnameNotNull();
         }
 ```
 
----
+
 #### 비동기 쿼리 메소드
 
 비동기 실행을 위해서 설정 필요 (@EnableAsync)
@@ -182,7 +182,7 @@ ListenableFuture<User> findOneByLastname(String lastname);
 비동기 쿼리가 트랜젝션이 열려있는 도중에 실행된다면 해당 트랜잭션의 작업을 알지 못하는 것을 주의해야 한다.
 (테스트에서는 그렇게 동작하는데 실제 애플리케이션에서 어떻게 동작할지는 모르겠음.)
 
----
+
 #### 커스텀 리포지토리
 쿼리 메소드(쿼리 만들기와 쿼리 찾아 사용하기)로 해결이 안되는 경우 직접 코딩으로 구현할 수 있다.
  - 스프링 데이터 리포지토리 인터페이스에 기능 추가.
@@ -225,7 +225,7 @@ public interface PostRepository extends JpaRepository<Post, Long>, PostCustomRep
 }
 ```
 
----
+
 #### 기본 리포지토리 커스터마이징
 모든 엔티티 리포지토리에 공통적으로 추가하거나 덮어 쓰고 싶은 기능이 있다면
 
@@ -271,7 +271,7 @@ public interface PostRepository extends MyRepository<Post, Long> {
 }
 ```
 
----
+
 #### 도메인 이벤트  
 도메인의 변경을 감지할 이벤트 리스너를 만들고 이벤트를 발생할 수 있다. (Spring의 이벤트 기능 사용)  
 
@@ -299,9 +299,9 @@ public class PostListener {
 
     @EventListener
     public void handle(PostPublishedEvent postPublishedEvent) {
-        System.out.println("--------------------------");
+        System.out.println("--");
         System.out.println(postPublishedEvent.getPost().getTitle() + " is published");
-        System.out.println("--------------------------");
+        System.out.println("--");
     }
 }
 ```
@@ -334,13 +334,13 @@ save()하기 전에 이벤트만 넣어주면??
 담겨있던 이벤트가 save() 시점에 자동으로 발생하며 리스너가 동작하게 된다.
 
 ```
---------------------------
+--
 good is published
---------------------------
+--
 ```
 => Event 객체를 생성하고 publish 하는 코드가 생략될 수 있다.
 
----
+
 #### QueryDSL 연동
 QueryDSL을 사용하는 이유중 하나는 조건문을 표현하는 방법이 타입 세이프 하다는 것. (자바 코드로 표현 가능)
 
@@ -403,7 +403,7 @@ public interface PostRepository extends JpaRepository<Post, Long>, QuerydslPredi
 }
 ```
 
----
+
 #### 웹 지원 기능
 
  - DomainClassConverter  
@@ -455,7 +455,7 @@ PagedResourcesAssembler를 매개변수로 받을 수 있으며 그를 통해 Pa
     }
 ```
 
----
+
 ### Spring Data JPA
 
 #### @EnableJpaRepositories
@@ -476,7 +476,7 @@ public class Application {
 }
 ```
  
----
+
 #### JpaRepository save()
 
 JpaRepository의 save()는 단순히 새 엔티티를 추가하는 메서드가 아니다.
@@ -495,7 +495,7 @@ save()는 Persistent 상태로 만든 엔티티를 반환하게 되는데
  - 엔티티가 Persistable 인터페이스를 구현하고 있다면 isNew() 메소드에 위임한다.
  - JpaRepositoryFactory를 상속받는 클래스를 만들고 getEntityInformation()을 오버라이딩해서 자신이 원하는 판단 로직을 구현할 수도 있다.
  
----
+
 #### 쿼리 메소드
 
 쿼리 생성하기
@@ -540,7 +540,7 @@ public interface PostRepository extends JpaRepository<Post, Long> {
     List<Post> findByTitle(String title);
 ```
 
----
+
 #### Sort
 ```
     @Query("SELECT p FROM Post p WHERE p.title = ?1")
@@ -566,7 +566,7 @@ JpaSort.unsafe()를 사용하면 함수 호출이 가능하다.
         List<Post> posts = postRepository.findByTitle("good", JpaSort.unsafe("LENGTH(title)"));
 ```
 
----
+
 #### NamedParameter와 SpEL
 
 NamedParameter (@Param)
@@ -576,14 +576,14 @@ NamedParameter (@Param)
 ```
 
 SpEL
- : 스프링 표현 언어, @Query에서 엔티티 이름을 #{#entityName}으로 표현할 수 있다.
+ : 스프링 표현 언어, @Query에서 엔티티 이름을 변수로 표현할 수 있다.
 ```
     @Query("SELECT p FROM #{#entityName} p WHERE p.title = :title")
     List<Post> findByTitle(@Param("title") String keyword);
 ```
 특정 엔티티의 리포지토리 안에서 해당 엔티티의 이름이 자동으로 들어간다.
 
----
+
 #### Update 쿼리 메소드
 보통은 JPA의 Dirty Checking을 통해서 flush 할때 Update 쿼리가 자동으로 발생하게 되지만,
 만약 Update 쿼리를 직접 정의해서 사용하고 싶다면?  
@@ -607,7 +607,7 @@ clearAutomatically 옵션을 사용하여 1차 캐시를 미리 비워두는 우
 ```
 그렇다 하더라도 별로임. => 애플리케이션 로직으로 Update 하는 것이 맞다.
 
----
+
 #### EntityGraph
 쿼리 메소드마다 Fetch 모드를 설정 할 수 있다.
 
@@ -645,7 +645,7 @@ public class Comment {
     Optional<Comment> getById(Long id);
 ```
 
----
+
 #### Projection
 엔티티의 일부 데이터만 가져오기.
 
@@ -734,7 +734,7 @@ public class CommentSummary {
     <T> List<T> findByPost_Id(Long id, Class<T> type);
 ```
 
----
+
 #### Specifications
 조건절을 Predicate와 유사한 Spec으로 정의할 수 있다.
  
@@ -819,7 +819,7 @@ Spec 사용하기
 ```
 => Spec 구현에 따라서 사용되는 쪽의 쿼리 가독성을 제공한다.
 
----
+
 #### 트랜젝션
 스프링 데이터 JPA가 제공하는 Repository의 모든 메소드에는 기본적으로 @Transactional이 적용되어 있다.
 
@@ -834,7 +834,7 @@ https://docs.spring.io/spring-framework/docs/current/javadoc-api/org/springframe
 JPA의 구현체로 Hibernate를 사용할 때 트랜잭션을 readOnly로 설정했을 때 장점
  : readOnly는 Flush 모드를 NEVER로 설정하여 Dirty Checking을 하지 않도록 함. => 성능적 이점
 
----
+
 #### Auditing
 엔티티 변경 시점에 언제, 누가 변경했는지에 대한 정보를 기록하는 기능이다.  
 스프링 부트 자동 설정 없음.
@@ -906,4 +906,5 @@ Auditing 대신 @PrePersist와 @PreUpdate등 JPA 라이프 사이클 이벤트�
         //엔티티가 영속화 되기 전 실행 될 로직을 추가하여 사용
     }
 ```
+이
 
